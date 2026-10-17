@@ -332,45 +332,123 @@ function saveGitHubConfig() {
 async function sendPullRequest() {
     const statusDiv = document.getElementById('prStatus');
     const sendBtn = document.getElementById('sendPrBtn');
-    statusDiv.className = 'pr-status'; statusDiv.style.display = 'none';
+    statusDiv.className = 'pr-status'; 
+    statusDiv.style.display = 'none';
     
     const config = saveGitHubConfig();
     if (!config.username || !config.repo || !config.token) {
-        statusDiv.className = 'pr-status error'; statusDiv.textContent = 'يرجى ملء جميع الحقول'; statusDiv.style.display = 'block'; return;
+        statusDiv.className = 'pr-status error'; 
+        statusDiv.textContent = 'يرجى ملء جميع الحقول'; 
+        statusDiv.style.display = 'block'; 
+        return;
     }
     
-    sendBtn.disabled = true; sendBtn.textContent = '⏳ جاري الإرسال...';
+    sendBtn.disabled = true; 
+    sendBtn.textContent = '⏳ جاري الإرسال...';
     
     try {
         const baseUrl = 'https://api.github.com/repos/' + config.username + '/' + config.repo;
-        const headers = { 'Authorization': 'token ' + config.token, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
+        const headers = { 
+            'Authorization': 'token ' + config.token, 
+            'Accept': 'application/vnd.github.v3+json', 
+            'Content-Type': 'application/json' 
+        };
         
-        statusDiv.className = 'pr-status'; statusDiv.style.background = '#e3f2fd'; statusDiv.style.borderRight = '4px solid #2196F3'; statusDiv.style.color = '#0d47a1'; statusDiv.style.display = 'block'; statusDiv.textContent = '📥 قراءة الملف الحالي...';
+        // التحقق من الوصول إلى المستودع
+        statusDiv.className = 'pr-status'; 
+        statusDiv.style.background = '#e3f2fd'; 
+        statusDiv.style.borderRight = '4px solid #2196F3'; 
+        statusDiv.style.color = '#0d47a1'; 
+        statusDiv.style.display = 'block'; 
+        statusDiv.textContent = ' التحقق من المستودع...';
+        
+        const repoCheck = await fetch(baseUrl, { headers });
+        if (!repoCheck.ok) {
+            const err = await repoCheck.json();
+            throw new Error('فشل في الوصول إلى المستودع: ' + (err.message || 'تأكد من صحة الـ Username والـ Repo والـ Token'));
+        }
+        
+        // قراءة الملف الحالي
+        statusDiv.textContent = '📥 قراءة الملف الحالي...';
         
         let defaultBranch = 'main';
-        try { const repoInfo = await fetch(baseUrl, { headers }); const repoData = await repoInfo.json(); defaultBranch = repoData.default_branch || 'main'; } catch (e) {}
+        try { 
+            const repoInfo = await repoCheck.json(); 
+            defaultBranch = repoInfo.default_branch || 'main'; 
+        } catch (e) {}
         
         const fileResponse = await fetch(baseUrl + '/contents/products.json?ref=' + defaultBranch, { headers });
-        if (!fileResponse.ok) throw new Error('فشل في قراءة products.json. تأكد من البيانات.');
+        if (!fileResponse.ok) {
+            const err = await fileResponse.json();
+            throw new Error('فشل في قراءة products.json: ' + (err.message || 'تأكد من وجود الملف في المستودع'));
+        }
         const fileData = await fileResponse.json();
         
+        // إنشاء branch جديد
         statusDiv.textContent = '🌿 إنشاء branch جديد...';
         const branchName = 'admin-update-' + Date.now();
         const refResponse = await fetch(baseUrl + '/git/refs/heads/' + defaultBranch, { headers });
+        
+        if (!refResponse.ok) {
+            const err = await refResponse.json();
+            throw new Error('فشل في قراءة معلومات الـ branch: ' + (err.message || ''));
+        }
+        
         const refData = await refResponse.json();
         
-        await fetch(baseUrl + '/git/refs', { method: 'POST', headers, body: JSON.stringify({ ref: 'refs/heads/' + branchName, sha: refData.object.sha }) });
+        const createBranchResponse = await fetch(baseUrl + '/git/refs', { 
+            method: 'POST', 
+            headers, 
+            body: JSON.stringify({ 
+                ref: 'refs/heads/' + branchName, 
+                sha: refData.object.sha 
+            }) 
+        });
         
+        if (!createBranchResponse.ok) {
+            const err = await createBranchResponse.json();
+            throw new Error('فشل في إنشاء branch: ' + (err.message || 'قد يكون الـ Token لا يملك صلاحيات كافية'));
+        }
+        
+        // تحديث الملف
         statusDiv.textContent = '📝 تحديث المنتجات...';
         const newContent = JSON.stringify(storeData, null, 2);
         const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
         
-        await fetch(baseUrl + '/contents/products.json', { method: 'PUT', headers, body: JSON.stringify({ message: '🤖 تحديث تلقائي من لوحة الإدارة', content: encodedContent, sha: fileData.sha, branch: branchName }) });
+        const updateResponse = await fetch(baseUrl + '/contents/products.json', { 
+            method: 'PUT', 
+            headers, 
+            body: JSON.stringify({ 
+                message: '🤖 تحديث تلقائي من لوحة الإدارة', 
+                content: encodedContent, 
+                sha: fileData.sha, 
+                branch: branchName 
+            }) 
+        });
         
+        if (!updateResponse.ok) {
+            const err = await updateResponse.json();
+            throw new Error('فشل في تحديث الملف: ' + (err.message || ''));
+        }
+        
+        // إنشاء Pull Request
         statusDiv.textContent = '🚀 إنشاء Pull Request...';
-        const prResponse = await fetch(baseUrl + '/pulls', { method: 'POST', headers, body: JSON.stringify({ title: '🔄 تحديث المنتجات من لوحة الإدارة', body: 'تم إنشاؤه تلقائياً من لوحة إدارة Champions Store.', head: branchName, base: defaultBranch }) });
+        const prResponse = await fetch(baseUrl + '/pulls', { 
+            method: 'POST', 
+            headers, 
+            body: JSON.stringify({ 
+                title: '🔄 تحديث المنتجات من لوحة الإدارة', 
+                body: 'تم إنشاؤه تلقائياً من لوحة إدارة Champions Store.\n\n**التغييرات:**\n- تحديث ملف products.json\n- التاريخ: ' + new Date().toLocaleString('ar-SY'), 
+                head: branchName, 
+                base: defaultBranch 
+            }) 
+        });
         
-        if (!prResponse.ok) throw new Error('فشل في إنشاء PR.');
+        if (!prResponse.ok) {
+            const err = await prResponse.json();
+            throw new Error('فشل في إنشاء PR: ' + (err.message || 'تأكد من صلاحيات الـ Token'));
+        }
+        
         const prData = await prResponse.json();
         
         statusDiv.className = 'pr-status success';
@@ -378,8 +456,12 @@ async function sendPullRequest() {
         showToast('تم إرسال Pull Request ✓');
         
     } catch (error) {
-        statusDiv.className = 'pr-status error'; statusDiv.textContent = '❌ خطأ: ' + error.message;
+        console.error('GitHub Sync Error:', error);
+        statusDiv.className = 'pr-status error'; 
+        statusDiv.textContent = ' خطأ: ' + error.message;
+        statusDiv.style.display = 'block';
     } finally {
-        sendBtn.disabled = false; sendBtn.textContent = '🚀 إرسال Pull Request';
+        sendBtn.disabled = false; 
+        sendBtn.textContent = '🚀 إرسال Pull Request';
     }
 }
