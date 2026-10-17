@@ -471,3 +471,203 @@ window.addEventListener('load', () => {
     console.log('  - productModal:', document.getElementById('productModal') ? 'موجود' : 'مفقود');
     console.log('  - productsTable:', document.getElementById('productsTable') ? 'موجود' : 'مفقود');
 });
+
+// ===== GitHub Sync Functions =====
+const GITHUB_STORAGE_KEY = 'championsGitHubConfig';
+
+// تحميل إعدادات GitHub المحفوظة
+function loadGitHubConfig() {
+    const saved = localStorage.getItem(GITHUB_STORAGE_KEY);
+    if (saved) {
+        try {
+            const config = JSON.parse(saved);
+            document.getElementById('githubUsername').value = config.username || '';
+            document.getElementById('githubRepo').value = config.repo || '';
+            document.getElementById('githubToken').value = config.token || '';
+            document.getElementById('githubBranch').value = config.branch || 'admin-update';
+        } catch (e) {
+            console.error('خطأ في تحميل إعدادات GitHub', e);
+        }
+    }
+}
+
+function saveGitHubConfig() {
+    const config = {
+        username: document.getElementById('githubUsername').value.trim(),
+        repo: document.getElementById('githubRepo').value.trim(),
+        token: document.getElementById('githubToken').value.trim(),
+        branch: document.getElementById('githubBranch').value.trim() || 'admin-update'
+    };
+    localStorage.setItem(GITHUB_STORAGE_KEY, JSON.stringify(config));
+    return config;
+}
+
+async function sendPullRequest() {
+    const statusDiv = document.getElementById('prStatus');
+    const sendBtn = document.getElementById('sendPrBtn');
+    
+    statusDiv.className = 'pr-status';
+    statusDiv.style.display = 'none';
+    
+    const config = saveGitHubConfig();
+    
+    if (!config.username || !config.repo || !config.token) {
+        showStatus('يرجى ملء جميع الحقول (Username, Repository, Token)', 'error');
+        return;
+    }
+    
+    sendBtn.disabled = true;
+    sendBtn.textContent = '⏳ جاري الإرسال...';
+    
+    try {
+        const baseUrl = \https://api.github.com/repos/\/\\;
+        const headers = {
+            'Authorization': \	oken \\,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+        };
+        
+        // 1. الحصول على SHA الحالي للملف products.json من branch الرئيسي
+        showStatus('📥 جاري قراءة الملف الحالي من GitHub...', 'info');
+        
+        let defaultBranch = 'main';
+        try {
+            const repoInfo = await fetch(baseUrl, { headers });
+            const repoData = await repoInfo.json();
+            defaultBranch = repoData.default_branch || 'main';
+        } catch (e) {
+            console.warn('تعذر قراءة معلومات المستودع، استخدام main');
+        }
+        
+        const fileResponse = await fetch(\\/contents/products.json?ref=\\, { headers });
+        
+        if (!fileResponse.ok) {
+            throw new Error('فشل في قراءة products.json من GitHub. تأكد من صحة البيانات.');
+        }
+        
+        const fileData = await fileResponse.json();
+        const currentSha = fileData.sha;
+        
+        // 2. إنشاء branch جديد
+        showStatus(' جاري إنشاء branch جديد...', 'info');
+        
+        const branchName = \dmin-update-\\;
+        
+        // الحصول على SHA آخر commit على الـ branch الرئيسي
+        const refResponse = await fetch(\\/git/refs/heads/\\, { headers });
+        const refData = await refResponse.json();
+        const baseSha = refData.object.sha;
+        
+        // إنشاء الـ branch
+        const createBranchResponse = await fetch(\\/git/refs\, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                ref: \efs/heads/\\,
+                sha: baseSha
+            })
+        });
+        
+        if (!createBranchResponse.ok) {
+            const err = await createBranchResponse.json();
+            throw new Error(\فشل في إنشاء branch: \\);
+        }
+        
+        // 3. تحديث الملف على الـ branch الجديد
+        showStatus('📝 جاري تحديث المنتجات...', 'info');
+        
+        const newContent = JSON.stringify(storeData, null, 2);
+        const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
+        
+        const updateResponse = await fetch(\\/contents/products.json\, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({
+                message: '🤖 تحديث تلقائي من لوحة الإدارة - Champions Store',
+                content: encodedContent,
+                sha: currentSha,
+                branch: branchName
+            })
+        });
+        
+        if (!updateResponse.ok) {
+            const err = await updateResponse.json();
+            throw new Error(\فشل في تحديث الملف: \\);
+        }
+        
+        // 4. إنشاء Pull Request
+        showStatus('🚀 جاري إنشاء Pull Request...', 'info');
+        
+        const prResponse = await fetch(\\/pulls\, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                title: '🔄 تحديث المنتجات من لوحة الإدارة',
+                body: \هذا Pull Request تم إنشاؤه تلقائياً من لوحة إدارة Champions Store.
+
+**التغييرات:**
+- تحديث ملف products.json
+- التاريخ: \
+
+يرجى مراجعة التغييرات والموافقة عليها لنشرها على الموقع.\,
+                head: branchName,
+                base: defaultBranch
+            })
+        });
+        
+        if (!prResponse.ok) {
+            const err = await prResponse.json();
+            throw new Error(\فشل في إنشاء PR: \\);
+        }
+        
+        const prData = await prResponse.json();
+        
+        // نجاح!
+        statusDiv.className = 'pr-status success';
+        statusDiv.innerHTML = \
+            <strong>✅ تم إنشاء Pull Request بنجاح!</strong><br><br>
+            <a href="\" target="_blank">
+                👉 اضغط هنا لمراجعة والموافقة على PR #\
+            </a><br><br>
+            <small>بعد الموافقة، سينشر Cloudflare Pages التحديث تلقائياً خلال دقيقة.</small>
+        \;
+        statusDiv.style.display = 'block';
+        
+        showToast('تم إرسال Pull Request بنجاح ✓');
+        
+    } catch (error) {
+        console.error('خطأ في GitHub Sync:', error);
+        showStatus(\❌ خطأ: \\, 'error');
+    } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = '🚀 إرسال Pull Request إلى GitHub';
+    }
+}
+
+function showStatus(message, type) {
+    const statusDiv = document.getElementById('prStatus');
+    statusDiv.className = 'pr-status ' + (type === 'error' ? 'error' : type === 'success' ? 'success' : '');
+    statusDiv.textContent = message;
+    statusDiv.style.display = 'block';
+    
+    if (type === 'info') {
+        statusDiv.style.background = '#e3f2fd';
+        statusDiv.style.borderRight = '4px solid #2196F3';
+        statusDiv.style.color = '#0d47a1';
+    }
+}
+
+// تحميل إعدادات GitHub عند فتح التبويب
+document.addEventListener('DOMContentLoaded', () => {
+    const githubTab = document.getElementById('githubTab');
+    if (githubTab) {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.target.classList.contains('active')) {
+                    loadGitHubConfig();
+                }
+            });
+        });
+        observer.observe(githubTab, { attributes: true, attributeFilter: ['class'] });
+    }
+});
