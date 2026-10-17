@@ -1,0 +1,141 @@
+﻿{
+  "storeInfo": {
+    "name": "Champions Store",
+    "tagline": "مكملات غذائية أصلية 100% - Champions Supplements",
+    "whatsapp": "963900000000",
+    "instagram": "champions_store",
+    "location": "دمشق - شحن لجميع المحافظات السورية"
+  },
+  "categories": [
+    { "id": "all", "name": "كل المنتجات", "icon": "🏋️" },
+    { "id": "creatine", "name": "كرياتين", "icon": "💪" },
+    { "id": "whey", "name": "واي بروتين", "icon": "" },
+    { "id": "mass-gainer", "name": "ماس جينر", "icon": "⚡" },
+    { "id": "amino", "name": "أحماض أمينية", "icon": "🧬" },
+    { "id": "pre-workout", "name": "بري وورك أوت", "icon": "🔥" },
+    { "id": "vitamins", "name": "فيتامينات", "icon": "💊" },
+    { "id": "fat-burner", "name": "حارق دهون", "icon": "🔥" }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "name": "Allmax Mass 2.27kg",
+      "category": "mass-gainer",
+      "price": 48,
+      "oldPrice": 55,
+      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Allmax+Mass",
+      "description": "ماس جينر عالي الجودة لزيادة الوزن والكتلة العضلية",
+      "badge": "الأكثر مبيعاً"
+    },
+    {
+      "id": 2,
+      "name": "كرياتين Applied 1kg",
+      "category": "creatine",
+      "price": 47,
+      "oldPrice": null,
+      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Applied+Creatine",
+      "description": "كرياتين مونوهيدرات نقي 100% من Applied Nutrition",
+      "badge": "جديد"
+    },
+    {
+      "id": 3,
+      "name": "Whey Trufuel 900g",
+      "category": "whey",
+      "price": 35,
+      "oldPrice": 40,
+      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Trufuel+Whey",
+      "description": "واي بروتين عالي الجودة بنكهات متعددة",
+      "badge": "خصم"
+    },
+    {
+      "id": 4,
+      "name": "Legendary Mass 7kg",
+      "category": "mass-gainer",
+      "price": 78,
+      "oldPrice": null,
+      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Legendary+Mass",
+      "description": "ماس جينر ضخم 7 كيلو لزيادة الوزن السريعة",
+      "badge": null
+    },
+    {
+      "id": 5,
+      "name": "Whey Nutrend 1kg",
+      "category": "whey",
+      "price": 32,
+      "oldPrice": null,
+      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Nutrend+Whey",
+      "description": "بروتين واي من Nutrend التشيكية",
+      "badge": null
+    },
+    {
+      "id": 6,
+      "name": "Whey C4 814g",
+      "category": "whey",
+      "price": 35,
+      "oldPrice": null,
+      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=C4+Whey",
+      "description": "واي بروتين من C4 الشهيرة",
+      "badge": null
+    },
+    {
+      "id": 7,
+      "name": "كرياتين One Raw 300g",
+      "category": "creatine",
+      "price": 16,
+      "oldPrice": null,
+      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=One+Raw+Creatine",
+      "description": "كرياتين نقي بدون إضافات",
+      "badge": null
+    },
+    {
+      "id": 8,
+      "name": "كرياتين Nutrend 300g",
+      "category": "creatine",
+      "price": 19,
+      "oldPrice": null,
+      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Nutrend+Creatine",
+      "description": "كرياتين بنكهات لذيذة من Nutrend",
+      "badge": null
+    },
+    {
+      "id": 9,
+      "name": "Naplam Pre-Workout 330g",
+      "category": "pre-workout",
+      "price": 15,
+      "oldPrice": null,
+      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Naplam",
+      "description": "محفز أداء قبل التمرين بطاقة عالية",
+      "badge": "مميز"
+    },
+    {
+      "id": 10,
+      "name": "BCAA Amino 300g",
+      "category": "amino",
+      "price": 22,
+      "oldPrice": 28,
+      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=BCAA+Amino",
+      "description": "أحماض أمينية BCAA لاستشفاء العضلات",
+      "badge": "خصم"
+    },
+    {
+      "id": 11,
+      "name": "Multivitamin Complex",
+      "category": "vitamins",
+      "price": 18,
+      "oldPrice": null,
+      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Multivitamin",
+      "description": "فيتامينات متعددة للصحة العامة",
+      "badge": null
+    },
+    {
+      "id": 12,
+      "name": "Fat Burner Pro 60 Caps",
+      "category": "fat-burner",
+      "price": 25,
+      "oldPrice": 30,
+      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Fat+Burner",
+      "description": "حارق دهون قوي لتسريع عملية الأيض",
+      "badge": "خصم"
+    }
+  ]
+}
