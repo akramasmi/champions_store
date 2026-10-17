@@ -22,29 +22,25 @@
 
     <!-- لوحة الإدارة الرئيسية -->
     <div class="admin-panel" id="adminPanel" style="display:none;">
-        
-        <!-- الشريط العلوي -->
         <header class="admin-header">
             <h1>⚙️ لوحة إدارة Champions Store</h1>
             <div class="header-actions">
                 <button class="btn-export" onclick="exportData()">📥 تصدير JSON</button>
-                <button class="btn-import" onclick="document.getElementById('importFile').click()"> استيراد JSON</button>
+                <button class="btn-import" onclick="document.getElementById('importFile').click()">📤 استيراد JSON</button>
                 <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
                 <button class="btn-logout" onclick="logout()">🚪 خروج</button>
             </div>
         </header>
 
-        <!-- التبويبات -->
         <nav class="admin-tabs">
             <button class="tab-btn active" data-tab="products">📦 المنتجات</button>
-            <button class="tab-btn" data-tab="store">️ معلومات المتجر</button>
-            <button class="tab-btn" data-tab="logo">️ اللوغو</button>
-            <button class="tab-btn" data-tab="password"> تغيير كلمة المرور</button>
+            <button class="tab-btn" data-tab="store">🏪 معلومات المتجر</button>
+            <button class="tab-btn" data-tab="logo">🖼️ اللوغو</button>
+            <button class="tab-btn" data-tab="password">🔑 كلمة المرور</button>
+            <button class="tab-btn" data-tab="github">🐙 GitHub Sync</button>
         </nav>
 
-        <!-- محتوى التبويبات -->
         <main class="admin-content">
-
             <!-- تبويب المنتجات -->
             <section class="tab-content active" id="productsTab">
                 <div class="section-header">
@@ -57,114 +53,33 @@
             <!-- تبويب معلومات المتجر -->
             <section class="tab-content" id="storeTab">
                 <h2>معلومات المتجر</h2>
-                <div class="form-group">
-                    <label>اسم المتجر</label>
-                    <input type="text" id="storeName">
-                </div>
-                <div class="form-group">
-                    <label>الوصف</label>
-                    <input type="text" id="storeTagline">
-                </div>
-                <div class="form-group">
-                    <label>رقم واتساب (مع رمز الدولة بدون +)</label>
-                    <input type="text" id="storeWhatsapp" placeholder="963900000000">
-                </div>
-                <div class="form-group">
-                    <label>حساب إنستغرام</label>
-                    <input type="text" id="storeInstagram">
-                </div>
-                <div class="form-group">
-                    <label>العنوان</label>
-                    <input type="text" id="storeLocation">
-                </div>
+                <div class="form-group"><label>اسم المتجر</label><input type="text" id="storeName"></div>
+                <div class="form-group"><label>الوصف</label><input type="text" id="storeTagline"></div>
+                <div class="form-group"><label>رقم واتساب</label><input type="text" id="storeWhatsapp" placeholder="963900000000"></div>
+                <div class="form-group"><label>حساب إنستغرام</label><input type="text" id="storeInstagram"></div>
+                <div class="form-group"><label>العنوان</label><input type="text" id="storeLocation"></div>
                 <button class="btn-save" onclick="saveStoreInfo()">💾 حفظ التغييرات</button>
             </section>
 
             <!-- تبويب اللوغو -->
             <section class="tab-content" id="logoTab">
                 <h2>إدارة اللوغو</h2>
-                <div class="logo-preview">
-                    <img id="logoPreview" src="logo.png" alt="اللوغو الحالي">
-                </div>
-                <div class="form-group">
-                    <label>رفع لوغو جديد (سيُحفظ كـ Base64 داخل البيانات)</label>
-                    <input type="file" id="logoUpload" accept="image/*" onchange="handleLogoUpload(event)">
-                </div>
-                <div class="form-group">
-                    <label>أو استخدم رابط خارجي</label>
-                    <input type="text" id="logoUrl" placeholder="https://...">
-                </div>
+                <div class="logo-preview"><img id="logoPreview" src="logo.png" alt="اللوغو الحالي"></div>
+                <div class="form-group"><label>رفع لوغو جديد</label><input type="file" id="logoUpload" accept="image/*" onchange="handleLogoUpload(event)"></div>
+                <div class="form-group"><label>أو رابط خارجي</label><input type="text" id="logoUrl" placeholder="https://..."></div>
                 <button class="btn-save" onclick="saveLogo()">💾 حفظ اللوغو</button>
-                <p class="note">⚠️ اللوغو المحفوظ كـ Base64 سيُصدّر مع JSON. للوغو كبير الحجم، يُفضل استخدام رابط خارجي.</p>
             </section>
 
             <!-- تبويب كلمة المرور -->
             <section class="tab-content" id="passwordTab">
                 <h2>تغيير كلمة المرور</h2>
-                <div class="form-group">
-                    <label>كلمة المرور الحالية</label>
-                    <input type="password" id="currentPassword">
-                </div>
-                <div class="form-group">
-                    <label>كلمة المرور الجديدة</label>
-                    <input type="password" id="newPassword">
-                </div>
-                <div class="form-group">
-                    <label>تأكيد كلمة المرور الجديدة</label>
-                    <input type="password" id="confirmPassword">
-                </div>
+                <div class="form-group"><label>كلمة المرور الحالية</label><input type="password" id="currentPassword"></div>
+                <div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" id="newPassword"></div>
+                <div class="form-group"><label>تأكيد كلمة المرور الجديدة</label><input type="password" id="confirmPassword"></div>
                 <button class="btn-save" onclick="changePassword()">🔑 تغيير كلمة المرور</button>
             </section>
 
-        
             <!-- تبويب GitHub Sync -->
-            <section class="tab-content" id="githubTab">
-                <h2>مزامنة مع GitHub</h2>
-                <div class="github-form">
-                    <div class="info-box">
-                        <strong> كيف يعمل؟</strong><br>
-                        عند الضغط على "إرسال Pull Request"، سترسل لوحة الإدارة التعديلات إلى GitHub كـ Pull Request.
-                        أنت توافق عليه من GitHub، ثم Cloudflare Pages ينشر التحديث تلقائياً.
-                        <br><br>
-                        <strong>🔑 إنشاء Token:</strong>
-                        <a href="https://github.com/settings/tokens/new?scopes=repo&description=Champions%20Store%20Admin" target="_blank">
-                            اضغط هنا لإنشاء Personal Access Token
-                        </a>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>GitHub Username</label>
-                        <input type="text" id="githubUsername" placeholder="your-username">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Repository Name</label>
-                        <input type="text" id="githubRepo" placeholder="champions-store">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Personal Access Token (PAT)</label>
-                        <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>اسم الـ Branch (يُنشأ تلقائياً)</label>
-                        <input type="text" id="githubBranch" value="admin-update" placeholder="admin-update">
-                    </div>
-                    
-                    <button class="btn-github" id="sendPrBtn" onclick="sendPullRequest()">
-                        🚀 إرسال Pull Request إلى GitHub
-                    </button>
-                    
-                    <div class="pr-status" id="prStatus"></div>
-                    
-                    <div class="token-warning">
-                        ️ <strong>تنبيه أمني:</strong> الـ Token يُحفظ في متصفحك فقط (localStorage).
-                        لا تشارك هذا المتصفح مع أحد. يمكنك مسح البيانات من تبويب "تغيير كلمة المرور" → "تسجيل الخروج".
-                    </div>
-                </div>
-            </section>
-                    <!-- تبويب GitHub Sync -->
             <section class="tab-content" id="githubTab">
                 <h2>مزامنة مع GitHub</h2>
                 <div class="github-form">
@@ -196,30 +111,15 @@
             </div>
             <div class="modal-body">
                 <input type="hidden" id="productId">
-                <div class="form-group">
-                    <label>اسم المنتج</label>
-                    <input type="text" id="productName">
-                </div>
-                <div class="form-group">
-                    <label>الفئة</label>
-                    <select id="productCategory"></select>
-                </div>
+                <div class="form-group"><label>اسم المنتج</label><input type="text" id="productName"></div>
+                <div class="form-group"><label>الفئة</label><select id="productCategory"></select></div>
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>السعر ($)</label>
-                        <input type="number" id="productPrice" step="0.01">
-                    </div>
-                    <div class="form-group">
-                        <label>السعر القديم (اختياري)</label>
-                        <input type="number" id="productOldPrice" step="0.01">
-                    </div>
+                    <div class="form-group"><label>السعر ($)</label><input type="number" id="productPrice" step="0.01"></div>
+                    <div class="form-group"><label>السعر القديم (اختياري)</label><input type="number" id="productOldPrice" step="0.01"></div>
                 </div>
+                <div class="form-group"><label>الوصف</label><textarea id="productDescription" rows="3"></textarea></div>
                 <div class="form-group">
-                    <label>الوصف</label>
-                    <textarea id="productDescription" rows="3"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>شارة المنتج (اختياري)</label>
+                    <label>شارة المنتج</label>
                     <select id="productBadge">
                         <option value="">بدون</option>
                         <option value="جديد">جديد</option>
@@ -237,14 +137,12 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-cancel" onclick="closeProductModal()">إلغاء</button>
-                <button class="btn-save" onclick="saveProduct()"> حفظ المنتج</button>
+                <button class="btn-save" onclick="saveProduct()">💾 حفظ المنتج</button>
             </div>
         </div>
     </div>
 
-    <!-- إشعار -->
     <div class="toast" id="toast"></div>
-
     <script src="admin-script.js"></script>
 </body>
 </html>
