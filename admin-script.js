@@ -231,6 +231,21 @@ function saveLogo() {
     if (!storeData.storeInfo) storeData.storeInfo = {};
     const url = document.getElementById('logoUrl').value.trim();
     const preview = document.getElementById('logoPreview');
+    
+    if (url) {
+        preview.src = url;
+        storeData.storeInfo.logo = url;
+        console.log('💾 تم حفظ اللوغو كرابط:', url);
+    } else if (preview.src && preview.src.startsWith('data:') && preview.src !== window.location.href) {
+        storeData.storeInfo.logo = preview.src;
+        console.log('💾 تم حفظ اللوغو كـ Base64');
+    }
+    
+    saveToLocalStorage();
+    showToast('تم حفظ اللوغو ✓');
+};
+    const url = document.getElementById('logoUrl').value.trim();
+    const preview = document.getElementById('logoPreview');
     if (url) {
         preview.src = url; storeData.storeInfo.logo = url;
     } else if (preview.src && preview.src.startsWith('data:')) {

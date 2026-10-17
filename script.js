@@ -49,6 +49,19 @@ async function init() {
             if (brandName) brandName.textContent = storeData.storeInfo.name;
         }
         
+        
+        // تحديث اللوغو من البيانات
+        if (storeData.storeInfo && storeData.storeInfo.logo) {
+            const logoImg = document.querySelector('.nav-logo');
+            const aboutLogo = document.querySelector('.about-image img');
+            const footerLogo = document.querySelector('.footer-brand img');
+            
+            if (logoImg) logoImg.src = storeData.storeInfo.logo;
+            if (aboutLogo) aboutLogo.src = storeData.storeInfo.logo;
+            if (footerLogo) footerLogo.src = storeData.storeInfo.logo;
+            
+            console.log('✅ تم تحديث اللوغو من البيانات');
+        }
         renderCategories();
         renderProducts();
         updateCartUI();
