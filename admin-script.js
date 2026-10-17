@@ -2,6 +2,7 @@
 const STORAGE_KEY = 'championsStoreData';
 const PASSWORD_KEY = 'championsStorePassword';
 const DEFAULT_PASSWORD = btoa('admin123');
+const GITHUB_STORAGE_KEY = 'championsGitHubConfig';
 
 let storeData = null;
 let editingProductId = null;
@@ -10,9 +11,7 @@ let editingProductId = null;
 function checkPassword() {
     const input = document.getElementById('passwordInput').value;
     const savedPassword = localStorage.getItem(PASSWORD_KEY) || DEFAULT_PASSWORD;
-    const inputEncoded = btoa(input);
-    
-    if (inputEncoded === savedPassword) {
+    if (btoa(input) === savedPassword) {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
         loadData();
@@ -22,10 +21,7 @@ function checkPassword() {
         document.getElementById('passwordInput').value = '';
     }
 }
-
-document.getElementById('passwordInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') checkPassword();
-});
+document.getElementById('passwordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPassword(); });
 
 function logout() {
     document.getElementById('adminPanel').style.display = 'none';
@@ -37,9 +33,8 @@ function logout() {
 async function loadData() {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            storeData = JSON.parse(saved);
-        } else {
+        if (saved) { storeData = JSON.parse(saved); } 
+        else {
             const response = await fetch('products.json');
             if (!response.ok) throw new Error('فشل في تحميل products.json');
             storeData = await response.json();
@@ -48,26 +43,13 @@ async function loadData() {
         renderAll();
     } catch (error) {
         showToast('خطأ في تحميل البيانات: ' + error.message, 'error');
-        storeData = {
-            storeInfo: { name: 'Champions Store', tagline: '', whatsapp: '963900000000', instagram: '', location: '' },
-            categories: [{ id: 'all', name: 'كل المنتجات', icon: '🏋️' }, { id: 'creatine', name: 'كرياتين', icon: '💪' }, { id: 'whey', name: 'واي بروتين', icon: '🥛' }],
-            products: []
-        };
-        renderAll();
     }
 }
 
-function saveToLocalStorage() {
-    if (storeData) localStorage.setItem(STORAGE_KEY, JSON.stringify(storeData));
-}
+function saveToLocalStorage() { if (storeData) localStorage.setItem(STORAGE_KEY, JSON.stringify(storeData)); }
+function renderAll() { if (!storeData) return; renderProducts(); renderStoreInfo(); renderCategories(); }
 
-function renderAll() {
-    if (!storeData) return;
-    renderProducts();
-    renderStoreInfo();
-    renderCategories();
-}
-
+// ===== التبويبات =====
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -75,6 +57,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.add('active');
         const tabElement = document.getElementById(btn.dataset.tab + 'Tab');
         if (tabElement) tabElement.classList.add('active');
+        
+        // تحميل إعدادات GitHub عند فتح التبويب
+        if (btn.dataset.tab === 'github') loadGitHubConfig();
     });
 });
 
@@ -320,39 +305,6 @@ document.getElementById('productModal').addEventListener('click', (e) => {
 });
 
 // ===== GitHub Sync Logic =====
-const GITHUB_STORAGE_KEY = 'championsGitHubConfig';
-
-window.addEventListener('DOMContentLoaded', () => {
-    const nav = document.querySelector('.admin-tabs');
-    const main = document.querySelector('.admin-content');
-    if (nav && !document.getElementById('githubTabBtn')) {
-        const btn = document.createElement('button');
-        btn.className = 'tab-btn';
-        btn.id = 'githubTabBtn';
-        btn.dataset.tab = 'github';
-        btn.textContent = '🐙 GitHub Sync';
-        nav.appendChild(btn);
-
-        if (main && !document.getElementById('githubTab')) {
-            const section = document.createElement('section');
-            section.className = 'tab-content';
-            section.id = 'githubTab';
-            section.innerHTML = '<h2>مزامنة مع GitHub</h2>' +
-                '<div class="github-form">' +
-                '<div class="info-box"><strong>💡 كيف يعمل؟</strong><br>يرسل التعديلات إلى GitHub كـ Pull Request. أنت توافق عليه، وCloudflare ينشره تلقائياً.<br><br><strong>🔑 إنشاء Token:</strong> <a href="https://github.com/settings/tokens/new?scopes=repo&description=Champions%20Store%20Admin" target="_blank">اضغط هنا لإنشاء Token</a></div>' +
-                '<div class="form-group"><label>GitHub Username</label><input type="text" id="githubUsername" placeholder="your-username"></div>' +
-                '<div class="form-group"><label>Repository Name</label><input type="text" id="githubRepo" placeholder="champions-store"></div>' +
-                '<div class="form-group"><label>Personal Access Token (PAT)</label><input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx"></div>' +
-                '<div class="form-group"><label>اسم الـ Branch</label><input type="text" id="githubBranch" value="admin-update"></div>' +
-                '<button class="btn-github" id="sendPrBtn" onclick="sendPullRequest()">🚀 إرسال Pull Request</button>' +
-                '<div class="pr-status" id="prStatus"></div>' +
-                '<div class="token-warning">⚠️ <strong>تنبيه:</strong> الـ Token يُحفظ في متصفحك فقط (localStorage).</div>' +
-                '</div>';
-            main.appendChild(section);
-        }
-    }
-});
-
 function loadGitHubConfig() {
     const saved = localStorage.getItem(GITHUB_STORAGE_KEY);
     if (saved) {
@@ -431,7 +383,3 @@ async function sendPullRequest() {
         sendBtn.disabled = false; sendBtn.textContent = '🚀 إرسال Pull Request';
     }
 }
-
-document.addEventListener('click', (e) => {
-    if (e.target.dataset && e.target.dataset.tab === 'github') loadGitHubConfig();
-});
