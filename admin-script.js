@@ -33,21 +33,32 @@ function logout() {
 async function loadData() {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) { storeData = JSON.parse(saved); } 
-        else {
-            const response = await fetch('products.json');
+        if (saved) {
+            storeData = JSON.parse(saved);
+        } else {
+            const response = await fetch('products.json?v=' + Date.now());
             if (!response.ok) throw new Error('فشل في تحميل products.json');
             storeData = await response.json();
             saveToLocalStorage();
         }
+        console.log('✅ تم تحميل البيانات:', storeData.products ? storeData.products.length : 0, 'منتج');
         renderAll();
     } catch (error) {
+        console.error('❌ خطأ:', error);
         showToast('خطأ في تحميل البيانات: ' + error.message, 'error');
     }
 }
 
-function saveToLocalStorage() { if (storeData) localStorage.setItem(STORAGE_KEY, JSON.stringify(storeData)); }
-function renderAll() { if (!storeData) return; renderProducts(); renderStoreInfo(); renderCategories(); }
+function saveToLocalStorage() {
+    if (storeData) localStorage.setItem(STORAGE_KEY, JSON.stringify(storeData));
+}
+
+function renderAll() {
+    if (!storeData) return;
+    renderProducts();
+    renderStoreInfo();
+    renderCategories();
+}
 
 // ===== التبويبات =====
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -57,9 +68,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.add('active');
         const tabElement = document.getElementById(btn.dataset.tab + 'Tab');
         if (tabElement) tabElement.classList.add('active');
-        
-        // تحميل إعدادات GitHub عند فتح التبويب
-        if (btn.dataset.tab === 'github') loadGitHubConfig();
     });
 });
 
@@ -176,18 +184,18 @@ function saveProduct() {
     const badge = document.getElementById('productBadge').value || null;
     const imageUrl = document.getElementById('productImageUrl').value.trim();
     const imagePreview = document.getElementById('imagePreview');
-    
+
     if (!name || !category || isNaN(price)) {
         showToast('يرجى ملء الحقول المطلوبة (الاسم، الفئة، السعر)', 'error');
         return;
     }
-    
+
     let image = imageUrl;
     if (imagePreview.style.display !== 'none' && imagePreview.src && imagePreview.src !== window.location.href) {
         image = imagePreview.src;
     }
     if (!image) image = 'https://via.placeholder.com/400x400/1a1a1a/d4af37?text=No+Image';
-    
+
     if (editingProductId) {
         const product = storeData.products.find(p => p.id === editingProductId);
         if (product) {
@@ -231,7 +239,7 @@ function saveLogo() {
     if (!storeData.storeInfo) storeData.storeInfo = {};
     const url = document.getElementById('logoUrl').value.trim();
     const preview = document.getElementById('logoPreview');
-    
+
     if (url) {
         preview.src = url;
         storeData.storeInfo.logo = url;
@@ -239,18 +247,11 @@ function saveLogo() {
     } else if (preview.src && preview.src.startsWith('data:') && preview.src !== window.location.href) {
         storeData.storeInfo.logo = preview.src;
         console.log('💾 تم حفظ اللوغو كـ Base64');
+    } else {
+        showToast('يرجى رفع صورة أو إدخال رابط', 'error');
+        return;
     }
-    
-    saveToLocalStorage();
-    showToast('تم حفظ اللوغو ✓');
-};
-    const url = document.getElementById('logoUrl').value.trim();
-    const preview = document.getElementById('logoPreview');
-    if (url) {
-        preview.src = url; storeData.storeInfo.logo = url;
-    } else if (preview.src && preview.src.startsWith('data:')) {
-        storeData.storeInfo.logo = preview.src;
-    }
+
     saveToLocalStorage();
     showToast('تم حفظ اللوغو ✓');
 }
@@ -260,11 +261,11 @@ function changePassword() {
     const newPass = document.getElementById('newPassword').value;
     const confirm = document.getElementById('confirmPassword').value;
     const savedPassword = localStorage.getItem(PASSWORD_KEY) || DEFAULT_PASSWORD;
-    
+
     if (btoa(current) !== savedPassword) { showToast('كلمة المرور الحالية غير صحيحة', 'error'); return; }
     if (newPass.length < 6) { showToast('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'error'); return; }
     if (newPass !== confirm) { showToast('كلمتا المرور غير متطابقتين', 'error'); return; }
-    
+
     localStorage.setItem(PASSWORD_KEY, btoa(newPass));
     document.getElementById('currentPassword').value = '';
     document.getElementById('newPassword').value = '';
@@ -319,16 +320,16 @@ document.getElementById('productModal').addEventListener('click', (e) => {
     if (e.target.id === 'productModal') closeProductModal();
 });
 
-// ===== GitHub Sync Logic =====
+// ===== GitHub Sync =====
 function loadGitHubConfig() {
     const saved = localStorage.getItem(GITHUB_STORAGE_KEY);
     if (saved) {
         try {
             const config = JSON.parse(saved);
-            const u = document.getElementById('githubUsername'); if(u) u.value = config.username || '';
-            const r = document.getElementById('githubRepo'); if(r) r.value = config.repo || '';
-            const t = document.getElementById('githubToken'); if(t) t.value = config.token || '';
-            const b = document.getElementById('githubBranch'); if(b) b.value = config.branch || 'admin-update';
+            const u = document.getElementById('githubUsername'); if (u) u.value = config.username || '';
+            const r = document.getElementById('githubRepo'); if (r) r.value = config.repo || '';
+            const t = document.getElementById('githubToken'); if (t) t.value = config.token || '';
+            const b = document.getElementById('githubBranch'); if (b) b.value = config.branch || 'admin-update';
         } catch (e) {}
     }
 }
@@ -347,136 +348,118 @@ function saveGitHubConfig() {
 async function sendPullRequest() {
     const statusDiv = document.getElementById('prStatus');
     const sendBtn = document.getElementById('sendPrBtn');
-    statusDiv.className = 'pr-status'; 
+    statusDiv.className = 'pr-status';
     statusDiv.style.display = 'none';
-    
+
     const config = saveGitHubConfig();
     if (!config.username || !config.repo || !config.token) {
-        statusDiv.className = 'pr-status error'; 
-        statusDiv.textContent = 'يرجى ملء جميع الحقول'; 
-        statusDiv.style.display = 'block'; 
+        statusDiv.className = 'pr-status error';
+        statusDiv.textContent = 'يرجى ملء جميع الحقول';
+        statusDiv.style.display = 'block';
         return;
     }
-    
-    sendBtn.disabled = true; 
+
+    sendBtn.disabled = true;
     sendBtn.textContent = '⏳ جاري الإرسال...';
-    
+
     try {
         const baseUrl = 'https://api.github.com/repos/' + config.username + '/' + config.repo;
-        const headers = { 
-            'Authorization': 'token ' + config.token, 
-            'Accept': 'application/vnd.github.v3+json', 
-            'Content-Type': 'application/json' 
+        const headers = {
+            'Authorization': 'token ' + config.token,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
         };
-        
-        // التحقق من الوصول إلى المستودع
-        statusDiv.className = 'pr-status'; 
-        statusDiv.style.background = '#e3f2fd'; 
-        statusDiv.style.borderRight = '4px solid #2196F3'; 
-        statusDiv.style.color = '#0d47a1'; 
-        statusDiv.style.display = 'block'; 
-        statusDiv.textContent = ' التحقق من المستودع...';
-        
+
+        statusDiv.className = 'pr-status';
+        statusDiv.style.background = '#e3f2fd';
+        statusDiv.style.borderRight = '4px solid #2196F3';
+        statusDiv.style.color = '#0d47a1';
+        statusDiv.style.display = 'block';
+        statusDiv.textContent = '🔍 التحقق من المستودع...';
+
         const repoCheck = await fetch(baseUrl, { headers });
         if (!repoCheck.ok) {
             const err = await repoCheck.json();
-            throw new Error('فشل في الوصول إلى المستودع: ' + (err.message || 'تأكد من صحة الـ Username والـ Repo والـ Token'));
+            throw new Error('فشل في الوصول إلى المستودع: ' + (err.message || 'تأكد من صحة البيانات'));
         }
-        
-        // قراءة الملف الحالي
+
         statusDiv.textContent = '📥 قراءة الملف الحالي...';
-        
         let defaultBranch = 'main';
-        try { 
-            const repoInfo = await repoCheck.json(); 
-            defaultBranch = repoInfo.default_branch || 'main'; 
+        try {
+            const repoInfo = await repoCheck.json();
+            defaultBranch = repoInfo.default_branch || 'main';
         } catch (e) {}
-        
+
         const fileResponse = await fetch(baseUrl + '/contents/products.json?ref=' + defaultBranch, { headers });
         if (!fileResponse.ok) {
             const err = await fileResponse.json();
-            throw new Error('فشل في قراءة products.json: ' + (err.message || 'تأكد من وجود الملف في المستودع'));
+            throw new Error('فشل في قراءة products.json: ' + (err.message || 'تأكد من وجود الملف'));
         }
         const fileData = await fileResponse.json();
-        
-        // إنشاء branch جديد
+
         statusDiv.textContent = '🌿 إنشاء branch جديد...';
         const branchName = 'admin-update-' + Date.now();
         const refResponse = await fetch(baseUrl + '/git/refs/heads/' + defaultBranch, { headers });
-        
-        if (!refResponse.ok) {
-            const err = await refResponse.json();
-            throw new Error('فشل في قراءة معلومات الـ branch: ' + (err.message || ''));
-        }
-        
+        if (!refResponse.ok) throw new Error('فشل في قراءة معلومات الـ branch');
         const refData = await refResponse.json();
-        
-        const createBranchResponse = await fetch(baseUrl + '/git/refs', { 
-            method: 'POST', 
-            headers, 
-            body: JSON.stringify({ 
-                ref: 'refs/heads/' + branchName, 
-                sha: refData.object.sha 
-            }) 
+
+        const createBranchResponse = await fetch(baseUrl + '/git/refs', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ ref: 'refs/heads/' + branchName, sha: refData.object.sha })
         });
-        
         if (!createBranchResponse.ok) {
             const err = await createBranchResponse.json();
-            throw new Error('فشل في إنشاء branch: ' + (err.message || 'قد يكون الـ Token لا يملك صلاحيات كافية'));
+            throw new Error('فشل في إنشاء branch: ' + (err.message || 'تأكد من صلاحيات الـ Token'));
         }
-        
-        // تحديث الملف
+
         statusDiv.textContent = '📝 تحديث المنتجات...';
         const newContent = JSON.stringify(storeData, null, 2);
         const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
-        
-        const updateResponse = await fetch(baseUrl + '/contents/products.json', { 
-            method: 'PUT', 
-            headers, 
-            body: JSON.stringify({ 
-                message: '🤖 تحديث تلقائي من لوحة الإدارة', 
-                content: encodedContent, 
-                sha: fileData.sha, 
-                branch: branchName 
-            }) 
+
+        const updateResponse = await fetch(baseUrl + '/contents/products.json', {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({
+                message: '🤖 تحديث تلقائي من لوحة الإدارة',
+                content: encodedContent,
+                sha: fileData.sha,
+                branch: branchName
+            })
         });
-        
         if (!updateResponse.ok) {
             const err = await updateResponse.json();
             throw new Error('فشل في تحديث الملف: ' + (err.message || ''));
         }
-        
-        // إنشاء Pull Request
+
         statusDiv.textContent = '🚀 إنشاء Pull Request...';
-        const prResponse = await fetch(baseUrl + '/pulls', { 
-            method: 'POST', 
-            headers, 
-            body: JSON.stringify({ 
-                title: '🔄 تحديث المنتجات من لوحة الإدارة', 
-                body: 'تم إنشاؤه تلقائياً من لوحة إدارة Champions Store.\n\n**التغييرات:**\n- تحديث ملف products.json\n- التاريخ: ' + new Date().toLocaleString('ar-SY'), 
-                head: branchName, 
-                base: defaultBranch 
-            }) 
+        const prResponse = await fetch(baseUrl + '/pulls', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                title: '🔄 تحديث المنتجات من لوحة الإدارة',
+                body: 'تم إنشاؤه تلقائياً من لوحة إدارة Champions Store.\n\n**التغييرات:**\n- تحديث ملف products.json\n- التاريخ: ' + new Date().toLocaleString('ar-SY'),
+                head: branchName,
+                base: defaultBranch
+            })
         });
-        
         if (!prResponse.ok) {
             const err = await prResponse.json();
             throw new Error('فشل في إنشاء PR: ' + (err.message || 'تأكد من صلاحيات الـ Token'));
         }
-        
         const prData = await prResponse.json();
-        
+
         statusDiv.className = 'pr-status success';
         statusDiv.innerHTML = '<strong>✅ تم بنجاح!</strong><br><br><a href="' + prData.html_url + '" target="_blank">👉 اضغط هنا للموافقة على PR #' + prData.number + '</a>';
         showToast('تم إرسال Pull Request ✓');
-        
+
     } catch (error) {
         console.error('GitHub Sync Error:', error);
-        statusDiv.className = 'pr-status error'; 
-        statusDiv.textContent = ' خطأ: ' + error.message;
+        statusDiv.className = 'pr-status error';
+        statusDiv.textContent = '❌ خطأ: ' + error.message;
         statusDiv.style.display = 'block';
     } finally {
-        sendBtn.disabled = false; 
-        sendBtn.textContent = '🚀 إرسال Pull Request';
+        sendBtn.disabled = false;
+        sendBtn.textContent = ' إرسال Pull Request';
     }
 }

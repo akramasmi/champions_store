@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Champions Store - متجر مكملات غذائية أصلية في دمشق">
-    <title>Champions Store | مكملات غذائية أصلية</title>
-    <link rel="stylesheet" href="style.css?v=1792278877">
-    <link rel="icon" href="logo.png" type="image/png">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <meta name="description" content="Champions Store - متجر مكملات غذائية أصلية في دمشق">
+    <title>Champions Store | مكملات غذائية أصلية</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="logo.png" type="image/png">
 </head>
 <body>
 
-    <!-- شريط التنقل -->
     <nav class="navbar" id="navbar">
         <div class="container nav-container">
             <div class="logo-area">
@@ -27,15 +26,12 @@
                 <li><a href="#contact">تواصل</a></li>
             </ul>
             <div class="nav-actions">
-                <button class="cart-btn" id="cartBtn">
-                    🛒 <span class="cart-count" id="cartCount">0</span>
-                </button>
-                <button class="menu-toggle" id="menuToggle"></button>
+                <button class="cart-btn" id="cartBtn">🛒 <span class="cart-count" id="cartCount">0</span></button>
+                <button class="menu-toggle" id="menuToggle">☰</button>
             </div>
         </div>
     </nav>
 
-    <!-- القسم الرئيسي -->
     <section class="hero" id="home">
         <div class="hero-overlay"></div>
         <div class="container hero-content">
@@ -49,39 +45,30 @@
             <div class="hero-features">
                 <div class="feature">✅ منتجات أصلية</div>
                 <div class="feature">🚚 شحن سريع</div>
-                <div class="feature">💯 ضمان الجودة</div>
+                <div class="feature"> ضمان الجودة</div>
             </div>
         </div>
     </section>
 
-    <!-- قسم البحث والفلاتر -->
     <section class="filters-section" id="products">
         <div class="container">
             <h2 class="section-title">منتجاتنا <span class="gold">المميزة</span></h2>
-            
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="🔍 ابحث عن منتج...">
             </div>
-
-            <div class="category-filters" id="categoryFilters">
-                <!-- يتم توليدها تلقائياً من JS -->
-            </div>
+            <div class="category-filters" id="categoryFilters"></div>
         </div>
     </section>
 
-    <!-- شبكة المنتجات -->
     <section class="products-section">
         <div class="container">
-            <div class="product-grid" id="productGrid">
-                <!-- يتم توليدها تلقائياً -->
-            </div>
+            <div class="product-grid" id="productGrid"></div>
             <div class="no-results" id="noResults" style="display:none;">
                 <p>😔 لا توجد منتجات مطابقة للبحث</p>
             </div>
         </div>
     </section>
 
-    <!-- من نحن -->
     <section class="about-section" id="about">
         <div class="container">
             <h2 class="section-title">من <span class="gold">نحن</span></h2>
@@ -91,7 +78,7 @@
                     <p>متجر متخصص بجميع المكملات الغذائية للرياضيين. نوفر لكم أفضل الماركات العالمية بأسعار منافسة مع ضمان الأصالة 100%.</p>
                     <ul class="about-list">
                         <li>🏆 منتجات أوريجنال مكفولة</li>
-                        <li> مقرنا في دمشق</li>
+                        <li>📍 مقرنا في دمشق</li>
                         <li>🚚 شحن لجميع المحافظات السورية</li>
                         <li>💬 دعم فني عبر واتساب</li>
                     </ul>
@@ -103,7 +90,6 @@
         </div>
     </section>
 
-    <!-- تواصل معنا -->
     <section class="contact-section" id="contact">
         <div class="container">
             <h2 class="section-title">تواصل <span class="gold">معنا</span></h2>
@@ -127,7 +113,6 @@
         </div>
     </section>
 
-    <!-- الفوتر -->
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
@@ -155,43 +140,35 @@
         </div>
     </footer>
 
-    <!-- مودال السلة -->
     <div class="modal" id="cartModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>🛒 سلة المشتريات</h2>
                 <button class="close-btn" id="closeCart">✕</button>
             </div>
-            <div class="modal-body" id="cartItems">
-                <!-- يتم توليدها تلقائياً -->
-            </div>
+            <div class="modal-body" id="cartItems"></div>
             <div class="modal-footer" id="cartFooter" style="display:none;">
                 <div class="cart-total">
                     <span>المجموع:</span>
                     <span class="total-price" id="totalPrice">0 $</span>
                 </div>
-                <button class="btn btn-primary btn-full" id="checkoutBtn">
-                    إتمام الطلب عبر واتساب 💬
-                </button>
+                <button class="btn btn-primary btn-full" id="checkoutBtn">إتمام الطلب عبر واتساب 💬</button>
             </div>
         </div>
     </div>
 
-    <!-- مودال تفاصيل المنتج -->
     <div class="modal" id="productModal">
         <div class="modal-content product-modal">
             <button class="close-btn" id="closeProduct">✕</button>
-            <div id="productDetails">
-                <!-- يتم توليده تلقائياً -->
-            </div>
+            <div id="productDetails"></div>
         </div>
     </div>
 
-    <!-- زر الواتساب العائم -->
-    <a href="https://wa.me/963900000000" target="_blank" class="floating-whatsapp">
-        💬
-    </a>
+    <a href="https://wa.me/963900000000" target="_blank" class="floating-whatsapp">💬</a>
 
-    <script src="script.js?v=1792278877"></script>
+    <script>
+        // إضافة رقم إصدار ديناميكي لمنع الكاش
+        document.write('<script src="script.js?v=' + Date.now() + '"><\/script>');
+    </script>
 </body>
 </html>
