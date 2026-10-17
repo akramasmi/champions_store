@@ -12,14 +12,18 @@ function checkPassword() {
     const savedPassword = localStorage.getItem(PASSWORD_KEY) || DEFAULT_PASSWORD;
     const inputEncoded = btoa(input);
     
+    console.log(' محاولة تسجيل الدخول...');
+    
     if (inputEncoded === savedPassword) {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
+        console.log('✅ تم تسجيل الدخول');
         loadData();
         showToast('تم تسجيل الدخول بنجاح ✓');
     } else {
         document.getElementById('errorMsg').textContent = 'كلمة المرور غير صحيحة';
         document.getElementById('passwordInput').value = '';
+        console.log(' كلمة المرور خاطئة');
     }
 }
 
@@ -37,31 +41,51 @@ function logout() {
 
 // ===== تحميل البيانات =====
 async function loadData() {
+    console.log('📥 جاري تحميل البيانات...');
     try {
+        // محاولة تحميل من localStorage أولاً
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
+            console.log('📂 تحميل من localStorage');
             storeData = JSON.parse(saved);
         } else {
+            console.log('🌐 تحميل من products.json');
             const response = await fetch('products.json');
+            if (!response.ok) throw new Error('فشل في تحميل products.json');
             storeData = await response.json();
             saveToLocalStorage();
         }
-        console.log('✅ تم تحميل البيانات:', storeData);
+        
+        console.log('✅ تم تحميل البيانات:', storeData.products ? storeData.products.length : 0, 'منتج');
         renderAll();
     } catch (error) {
         console.error('❌ خطأ في تحميل البيانات:', error);
         showToast('خطأ في تحميل البيانات: ' + error.message, 'error');
+        
+        // بيانات افتراضية للطوارئ
+        storeData = {
+            storeInfo: { name: 'Champions Store', tagline: '', whatsapp: '963900000000', instagram: '', location: '' },
+            categories: [
+                { id: 'all', name: 'كل المنتجات', icon: '🏋️' },
+                { id: 'creatine', name: 'كرياتين', icon: '💪' },
+                { id: 'whey', name: 'واي بروتين', icon: '🥛' }
+            ],
+            products: []
+        };
+        renderAll();
     }
 }
 
 function saveToLocalStorage() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(storeData));
+    if (storeData) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(storeData));
+    }
 }
 
 // ===== عرض كل شيء =====
 function renderAll() {
     if (!storeData) {
-        console.error(' storeData غير محمّل');
+        console.error('❌ storeData غير محمّل');
         return;
     }
     renderProducts();
@@ -85,12 +109,12 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 // ===== عرض المنتجات =====
 function renderProducts() {
-    if (!storeData || !storeData.products) {
-        console.error('❌ لا توجد منتجات');
+    const container = document.getElementById('productsTable');
+    if (!container || !storeData || !storeData.products) {
+        console.error('❌ لا يمكن عرض المنتجات');
         return;
     }
     
-    const container = document.getElementById('productsTable');
     const categories = storeData.categories.filter(c => c.id !== 'all');
     
     let html = `<div class="product-row header">
@@ -125,17 +149,20 @@ function renderProducts() {
 // ===== عرض معلومات المتجر =====
 function renderStoreInfo() {
     if (!storeData || !storeData.storeInfo) return;
-    document.getElementById('storeName').value = storeData.storeInfo.name || '';
-    document.getElementById('storeTagline').value = storeData.storeInfo.tagline || '';
-    document.getElementById('storeWhatsapp').value = storeData.storeInfo.whatsapp || '';
-    document.getElementById('storeInstagram').value = storeData.storeInfo.instagram || '';
-    document.getElementById('storeLocation').value = storeData.storeInfo.location || '';
+    const fields = ['storeName', 'storeTagline', 'storeWhatsapp', 'storeInstagram', 'storeLocation'];
+    const keys = ['name', 'tagline', 'whatsapp', 'instagram', 'location'];
+    
+    fields.forEach((field, index) => {
+        const el = document.getElementById(field);
+        if (el) el.value = storeData.storeInfo[keys[index]] || '';
+    });
 }
 
 // ===== عرض الفئات في القائمة =====
 function renderCategories() {
-    if (!storeData || !storeData.categories) return;
     const select = document.getElementById('productCategory');
+    if (!select || !storeData || !storeData.categories) return;
+    
     const categories = storeData.categories.filter(c => c.id !== 'all');
     select.innerHTML = categories.map(c => 
         `<option value="${c.id}">${c.icon} ${c.name}</option>`
@@ -167,19 +194,22 @@ function openProductModal() {
     renderCategories();
     
     const modal = document.getElementById('productModal');
-    modal.classList.add('active');
-    console.log('✅ تم فتح المودال');
+    if (modal) {
+        modal.classList.add('active');
+        console.log('✅ تم فتح المودال');
+    }
 }
 
 function closeProductModal() {
-    document.getElementById('productModal').classList.remove('active');
+    const modal = document.getElementById('productModal');
+    if (modal) modal.classList.remove('active');
     editingProductId = null;
 }
 
 function editProduct(id) {
-    console.log(' تعديل منتج:', id);
+    console.log('✏️ تعديل منتج:', id);
     
-    if (!storeData) {
+    if (!storeData || !storeData.products) {
         showToast('البيانات غير محمّلة', 'error');
         return;
     }
@@ -238,7 +268,7 @@ function handleImageUpload(event) {
 
 // ===== حفظ المنتج =====
 function saveProduct() {
-    console.log(' حفظ منتج');
+    console.log('💾 حفظ منتج');
     
     const name = document.getElementById('productName').value.trim();
     const category = document.getElementById('productCategory').value;
@@ -298,6 +328,8 @@ function saveProduct() {
 
 // ===== حفظ معلومات المتجر =====
 function saveStoreInfo() {
+    if (!storeData.storeInfo) storeData.storeInfo = {};
+    
     storeData.storeInfo.name = document.getElementById('storeName').value.trim();
     storeData.storeInfo.tagline = document.getElementById('storeTagline').value.trim();
     storeData.storeInfo.whatsapp = document.getElementById('storeWhatsapp').value.trim();
@@ -322,6 +354,8 @@ function handleLogoUpload(event) {
 }
 
 function saveLogo() {
+    if (!storeData.storeInfo) storeData.storeInfo = {};
+    
     const url = document.getElementById('logoUrl').value.trim();
     const preview = document.getElementById('logoPreview');
     
@@ -371,6 +405,11 @@ function changePassword() {
 
 // ===== تصدير البيانات =====
 function exportData() {
+    if (!storeData) {
+        showToast('لا توجد بيانات للتصدير', 'error');
+        return;
+    }
+    
     const dataStr = JSON.stringify(storeData, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -410,6 +449,8 @@ function importData(event) {
 // ===== الإشعارات =====
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
+    if (!toast) return;
+    
     toast.textContent = message;
     toast.style.background = type === 'error' ? 'var(--danger)' : 'var(--success)';
     toast.classList.add('show');
@@ -423,8 +464,8 @@ document.getElementById('productModal').addEventListener('click', (e) => {
 
 // ===== تشخيص عند التحميل =====
 window.addEventListener('load', () => {
-    console.log('🚀 تم تحميل الصفحة');
-    console.log(' عناصر DOM:');
+    console.log('🚀 تم تحميل صفحة الإدارة');
+    console.log('📋 عناصر DOM:');
     console.log('  - loginScreen:', document.getElementById('loginScreen') ? 'موجود' : 'مفقود');
     console.log('  - adminPanel:', document.getElementById('adminPanel') ? 'موجود' : 'مفقود');
     console.log('  - productModal:', document.getElementById('productModal') ? 'موجود' : 'مفقود');
