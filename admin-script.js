@@ -8,27 +8,49 @@ let editingProductId = null;
 
 // ===== التحقق من كلمة المرور =====
 function checkPassword() {
+    console.log('🔵 محاولة تسجيل الدخول...');
+    
     const input = document.getElementById('passwordInput').value;
     const savedPassword = localStorage.getItem(PASSWORD_KEY) || DEFAULT_PASSWORD;
     const inputEncoded = btoa(input);
     
-    console.log(' محاولة تسجيل الدخول...');
+    console.log('Input:', input);
+    console.log('Saved:', savedPassword);
+    console.log('Input Encoded:', inputEncoded);
     
     if (inputEncoded === savedPassword) {
+        console.log('✅ كلمة المرور صحيحة');
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
-        console.log('✅ تم تسجيل الدخول');
         loadData();
         showToast('تم تسجيل الدخول بنجاح ✓');
     } else {
+        console.log(' كلمة المرور خاطئة');
         document.getElementById('errorMsg').textContent = 'كلمة المرور غير صحيحة';
         document.getElementById('passwordInput').value = '';
-        console.log(' كلمة المرور خاطئة');
     }
 }
 
-document.getElementById('passwordInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') checkPassword();
+// Event listener لزر الدخول
+document.addEventListener('DOMContentLoaded', function() {
+    console.log(' تم تحميل الصفحة');
+    
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', checkPassword);
+        console.log('✅ تم ربط زر تسجيل الدخول');
+    } else {
+        console.error('❌ لم يتم العثور على زر تسجيل الدخول');
+    }
+    
+    const passwordInput = document.getElementById('passwordInput');
+    if (passwordInput) {
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+    }
 });
 
 // ===== تسجيل الخروج =====
@@ -43,13 +65,12 @@ function logout() {
 async function loadData() {
     console.log('📥 جاري تحميل البيانات...');
     try {
-        // محاولة تحميل من localStorage أولاً
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             console.log('📂 تحميل من localStorage');
             storeData = JSON.parse(saved);
         } else {
-            console.log('🌐 تحميل من products.json');
+            console.log(' تحميل من products.json');
             const response = await fetch('products.json');
             if (!response.ok) throw new Error('فشل في تحميل products.json');
             storeData = await response.json();
@@ -94,16 +115,18 @@ function renderAll() {
 }
 
 // ===== التبويبات =====
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        const tabId = btn.dataset.tab + 'Tab';
-        const tabElement = document.getElementById(tabId);
-        if (tabElement) {
-            tabElement.classList.add('active');
-        }
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            const tabId = this.dataset.tab + 'Tab';
+            const tabElement = document.getElementById(tabId);
+            if (tabElement) {
+                tabElement.classList.add('active');
+            }
+        });
     });
 });
 
@@ -117,30 +140,21 @@ function renderProducts() {
     
     const categories = storeData.categories.filter(c => c.id !== 'all');
     
-    let html = `<div class="product-row header">
-        <div>صورة</div>
-        <div>الاسم</div>
-        <div>السعر</div>
-        <div>الفئة</div>
-        <div>إجراءات</div>
-    </div>`;
+    let html = '<div class="product-row header"><div>صورة</div><div>الاسم</div><div>السعر</div><div>الفئة</div><div>إجراءات</div></div>';
     
     storeData.products.forEach(product => {
         const cat = categories.find(c => c.id === product.category);
-        html += `<div class="product-row">
-            <img src="${product.image}" alt="${product.name}" 
-                 onerror="this.src='https://via.placeholder.com/60x60/1a1a1a/d4af37?text=No+Image'">
-            <div>
-                <strong>${product.name}</strong>
-                ${product.badge ? `<br><small style="color:var(--gold-dark)">${product.badge}</small>` : ''}
-            </div>
-            <div>${product.price} $</div>
-            <div>${cat ? cat.name : product.category}</div>
-            <div class="product-actions">
-                <button class="btn-edit" onclick="editProduct(${product.id})">✏️</button>
-                <button class="btn-delete" onclick="deleteProduct(${product.id})">🗑️</button>
-            </div>
-        </div>`;
+        html += '<div class="product-row">' +
+            '<img src="' + product.image + '" alt="' + product.name + '" onerror="this.src=\'https://via.placeholder.com/60x60/1a1a1a/d4af37?text=No+Image\'">' +
+            '<div><strong>' + product.name + '</strong>' +
+            (product.badge ? '<br><small style="color:var(--gold-dark)">' + product.badge + '</small>' : '') +
+            '</div>' +
+            '<div>' + product.price + ' $</div>' +
+            '<div>' + (cat ? cat.name : product.category) + '</div>' +
+            '<div class="product-actions">' +
+            '<button class="btn-edit" onclick="editProduct(' + product.id + ')">✏️</button>' +
+            '<button class="btn-delete" onclick="deleteProduct(' + product.id + ')">️</button>' +
+            '</div></div>';
     });
     
     container.innerHTML = html;
@@ -152,7 +166,7 @@ function renderStoreInfo() {
     const fields = ['storeName', 'storeTagline', 'storeWhatsapp', 'storeInstagram', 'storeLocation'];
     const keys = ['name', 'tagline', 'whatsapp', 'instagram', 'location'];
     
-    fields.forEach((field, index) => {
+    fields.forEach(function(field, index) {
         const el = document.getElementById(field);
         if (el) el.value = storeData.storeInfo[keys[index]] || '';
     });
@@ -164,9 +178,9 @@ function renderCategories() {
     if (!select || !storeData || !storeData.categories) return;
     
     const categories = storeData.categories.filter(c => c.id !== 'all');
-    select.innerHTML = categories.map(c => 
-        `<option value="${c.id}">${c.icon} ${c.name}</option>`
-    ).join('');
+    select.innerHTML = categories.map(function(c) {
+        return '<option value="' + c.id + '">' + c.icon + ' ' + c.name + '</option>';
+    }).join('');
 }
 
 // ===== مودال المنتج =====
@@ -207,14 +221,14 @@ function closeProductModal() {
 }
 
 function editProduct(id) {
-    console.log('✏️ تعديل منتج:', id);
+    console.log('️ تعديل منتج:', id);
     
     if (!storeData || !storeData.products) {
         showToast('البيانات غير محمّلة', 'error');
         return;
     }
     
-    const product = storeData.products.find(p => p.id === id);
+    const product = storeData.products.find(function(p) { return p.id === id; });
     if (!product) {
         showToast('المنتج غير موجود', 'error');
         return;
@@ -245,7 +259,7 @@ function editProduct(id) {
 function deleteProduct(id) {
     if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
     
-    storeData.products = storeData.products.filter(p => p.id !== id);
+    storeData.products = storeData.products.filter(function(p) { return p.id !== id; });
     saveToLocalStorage();
     renderProducts();
     showToast('تم حذف المنتج ✓');
@@ -257,7 +271,7 @@ function handleImageUpload(event) {
     if (!file) return;
     
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = function(e) {
         const preview = document.getElementById('imagePreview');
         preview.src = e.target.result;
         preview.style.display = 'block';
@@ -294,7 +308,7 @@ function saveProduct() {
     }
     
     if (editingProductId) {
-        const product = storeData.products.find(p => p.id === editingProductId);
+        const product = storeData.products.find(function(p) { return p.id === editingProductId; });
         if (product) {
             product.name = name;
             product.category = category;
@@ -306,17 +320,17 @@ function saveProduct() {
         }
     } else {
         const newId = storeData.products.length > 0 
-            ? Math.max(...storeData.products.map(p => p.id)) + 1 
+            ? Math.max.apply(null, storeData.products.map(function(p) { return p.id; })) + 1 
             : 1;
         storeData.products.push({
             id: newId,
-            name,
-            category,
-            price,
-            oldPrice,
-            description,
-            badge,
-            image
+            name: name,
+            category: category,
+            price: price,
+            oldPrice: oldPrice,
+            description: description,
+            badge: badge,
+            image: image
         });
     }
     
@@ -346,7 +360,7 @@ function handleLogoUpload(event) {
     if (!file) return;
     
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = function(e) {
         document.getElementById('logoPreview').src = e.target.result;
         document.getElementById('logoUrl').value = '';
     };
@@ -427,7 +441,7 @@ function importData(event) {
     if (!file) return;
     
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = function(e) {
         try {
             const imported = JSON.parse(e.target.result);
             if (imported.products && imported.storeInfo && imported.categories) {
@@ -447,227 +461,23 @@ function importData(event) {
 }
 
 // ===== الإشعارات =====
-function showToast(message, type = 'success') {
+function showToast(message, type) {
+    type = type || 'success';
     const toast = document.getElementById('toast');
     if (!toast) return;
     
     toast.textContent = message;
     toast.style.background = type === 'error' ? 'var(--danger)' : 'var(--success)';
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3000);
+    setTimeout(function() { toast.classList.remove('show'); }, 3000);
 }
 
 // إغلاق المودال عند النقر خارجه
-document.getElementById('productModal').addEventListener('click', (e) => {
-    if (e.target.id === 'productModal') closeProductModal();
-});
-
-// ===== تشخيص عند التحميل =====
-window.addEventListener('load', () => {
-    console.log('🚀 تم تحميل صفحة الإدارة');
-    console.log('📋 عناصر DOM:');
-    console.log('  - loginScreen:', document.getElementById('loginScreen') ? 'موجود' : 'مفقود');
-    console.log('  - adminPanel:', document.getElementById('adminPanel') ? 'موجود' : 'مفقود');
-    console.log('  - productModal:', document.getElementById('productModal') ? 'موجود' : 'مفقود');
-    console.log('  - productsTable:', document.getElementById('productsTable') ? 'موجود' : 'مفقود');
-});
-
-// ===== GitHub Sync Functions =====
-const GITHUB_STORAGE_KEY = 'championsGitHubConfig';
-
-// تحميل إعدادات GitHub المحفوظة
-function loadGitHubConfig() {
-    const saved = localStorage.getItem(GITHUB_STORAGE_KEY);
-    if (saved) {
-        try {
-            const config = JSON.parse(saved);
-            document.getElementById('githubUsername').value = config.username || '';
-            document.getElementById('githubRepo').value = config.repo || '';
-            document.getElementById('githubToken').value = config.token || '';
-            document.getElementById('githubBranch').value = config.branch || 'admin-update';
-        } catch (e) {
-            console.error('خطأ في تحميل إعدادات GitHub', e);
-        }
-    }
-}
-
-function saveGitHubConfig() {
-    const config = {
-        username: document.getElementById('githubUsername').value.trim(),
-        repo: document.getElementById('githubRepo').value.trim(),
-        token: document.getElementById('githubToken').value.trim(),
-        branch: document.getElementById('githubBranch').value.trim() || 'admin-update'
-    };
-    localStorage.setItem(GITHUB_STORAGE_KEY, JSON.stringify(config));
-    return config;
-}
-
-async function sendPullRequest() {
-    const statusDiv = document.getElementById('prStatus');
-    const sendBtn = document.getElementById('sendPrBtn');
-    
-    statusDiv.className = 'pr-status';
-    statusDiv.style.display = 'none';
-    
-    const config = saveGitHubConfig();
-    
-    if (!config.username || !config.repo || !config.token) {
-        showStatus('يرجى ملء جميع الحقول (Username, Repository, Token)', 'error');
-        return;
-    }
-    
-    sendBtn.disabled = true;
-    sendBtn.textContent = '⏳ جاري الإرسال...';
-    
-    try {
-        const baseUrl = \https://api.github.com/repos/\/\\;
-        const headers = {
-            'Authorization': \	oken \\,
-            'Accept': 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json'
-        };
-        
-        // 1. الحصول على SHA الحالي للملف products.json من branch الرئيسي
-        showStatus('📥 جاري قراءة الملف الحالي من GitHub...', 'info');
-        
-        let defaultBranch = 'main';
-        try {
-            const repoInfo = await fetch(baseUrl, { headers });
-            const repoData = await repoInfo.json();
-            defaultBranch = repoData.default_branch || 'main';
-        } catch (e) {
-            console.warn('تعذر قراءة معلومات المستودع، استخدام main');
-        }
-        
-        const fileResponse = await fetch(\\/contents/products.json?ref=\\, { headers });
-        
-        if (!fileResponse.ok) {
-            throw new Error('فشل في قراءة products.json من GitHub. تأكد من صحة البيانات.');
-        }
-        
-        const fileData = await fileResponse.json();
-        const currentSha = fileData.sha;
-        
-        // 2. إنشاء branch جديد
-        showStatus(' جاري إنشاء branch جديد...', 'info');
-        
-        const branchName = \dmin-update-\\;
-        
-        // الحصول على SHA آخر commit على الـ branch الرئيسي
-        const refResponse = await fetch(\\/git/refs/heads/\\, { headers });
-        const refData = await refResponse.json();
-        const baseSha = refData.object.sha;
-        
-        // إنشاء الـ branch
-        const createBranchResponse = await fetch(\\/git/refs\, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-                ref: \efs/heads/\\,
-                sha: baseSha
-            })
+document.addEventListener('DOMContentLoaded', function() {
+    const productModal = document.getElementById('productModal');
+    if (productModal) {
+        productModal.addEventListener('click', function(e) {
+            if (e.target.id === 'productModal') closeProductModal();
         });
-        
-        if (!createBranchResponse.ok) {
-            const err = await createBranchResponse.json();
-            throw new Error(\فشل في إنشاء branch: \\);
-        }
-        
-        // 3. تحديث الملف على الـ branch الجديد
-        showStatus('📝 جاري تحديث المنتجات...', 'info');
-        
-        const newContent = JSON.stringify(storeData, null, 2);
-        const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
-        
-        const updateResponse = await fetch(\\/contents/products.json\, {
-            method: 'PUT',
-            headers,
-            body: JSON.stringify({
-                message: '🤖 تحديث تلقائي من لوحة الإدارة - Champions Store',
-                content: encodedContent,
-                sha: currentSha,
-                branch: branchName
-            })
-        });
-        
-        if (!updateResponse.ok) {
-            const err = await updateResponse.json();
-            throw new Error(\فشل في تحديث الملف: \\);
-        }
-        
-        // 4. إنشاء Pull Request
-        showStatus('🚀 جاري إنشاء Pull Request...', 'info');
-        
-        const prResponse = await fetch(\\/pulls\, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-                title: '🔄 تحديث المنتجات من لوحة الإدارة',
-                body: \هذا Pull Request تم إنشاؤه تلقائياً من لوحة إدارة Champions Store.
-
-**التغييرات:**
-- تحديث ملف products.json
-- التاريخ: \
-
-يرجى مراجعة التغييرات والموافقة عليها لنشرها على الموقع.\,
-                head: branchName,
-                base: defaultBranch
-            })
-        });
-        
-        if (!prResponse.ok) {
-            const err = await prResponse.json();
-            throw new Error(\فشل في إنشاء PR: \\);
-        }
-        
-        const prData = await prResponse.json();
-        
-        // نجاح!
-        statusDiv.className = 'pr-status success';
-        statusDiv.innerHTML = \
-            <strong>✅ تم إنشاء Pull Request بنجاح!</strong><br><br>
-            <a href="\" target="_blank">
-                👉 اضغط هنا لمراجعة والموافقة على PR #\
-            </a><br><br>
-            <small>بعد الموافقة، سينشر Cloudflare Pages التحديث تلقائياً خلال دقيقة.</small>
-        \;
-        statusDiv.style.display = 'block';
-        
-        showToast('تم إرسال Pull Request بنجاح ✓');
-        
-    } catch (error) {
-        console.error('خطأ في GitHub Sync:', error);
-        showStatus(\❌ خطأ: \\, 'error');
-    } finally {
-        sendBtn.disabled = false;
-        sendBtn.textContent = '🚀 إرسال Pull Request إلى GitHub';
-    }
-}
-
-function showStatus(message, type) {
-    const statusDiv = document.getElementById('prStatus');
-    statusDiv.className = 'pr-status ' + (type === 'error' ? 'error' : type === 'success' ? 'success' : '');
-    statusDiv.textContent = message;
-    statusDiv.style.display = 'block';
-    
-    if (type === 'info') {
-        statusDiv.style.background = '#e3f2fd';
-        statusDiv.style.borderRight = '4px solid #2196F3';
-        statusDiv.style.color = '#0d47a1';
-    }
-}
-
-// تحميل إعدادات GitHub عند فتح التبويب
-document.addEventListener('DOMContentLoaded', () => {
-    const githubTab = document.getElementById('githubTab');
-    if (githubTab) {
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.target.classList.contains('active')) {
-                    loadGitHubConfig();
-                }
-            });
-        });
-        observer.observe(githubTab, { attributes: true, attributeFilter: ['class'] });
     }
 });
