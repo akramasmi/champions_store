@@ -1,4 +1,5 @@
 ﻿// ===== الإعدادات =====
+const STORAGE_KEY = 'championsStoreData';
 let storeData = null;
 let allProducts = [];
 let currentCategory = 'all';
@@ -8,13 +9,23 @@ let cart = JSON.parse(localStorage.getItem('championsCart')) || [];
 // ===== تحميل البيانات =====
 async function init() {
     try {
-        console.log('جاري تحميل البيانات...');
-        const response = await fetch('products.json');
-        if (!response.ok) throw new Error('فشل في تحميل products.json');
-        storeData = await response.json();
-        allProducts = storeData.products;
+        console.log('🔄 جاري تحميل البيانات...');
         
-        console.log('✅ تم تحميل البيانات:', storeData.products.length, 'منتج');
+        // محاولة تحميل من localStorage أولاً (البيانات المعدلة من الأدمن)
+        const savedData = localStorage.getItem(STORAGE_KEY);
+        
+        if (savedData) {
+            console.log('📂 تحميل البيانات المعدلة من localStorage');
+            storeData = JSON.parse(savedData);
+        } else {
+            console.log('🌐 تحميل البيانات من products.json');
+            const response = await fetch('products.json');
+            if (!response.ok) throw new Error('فشل في تحميل products.json');
+            storeData = await response.json();
+        }
+        
+        allProducts = storeData.products;
+        console.log('✅ تم تحميل البيانات:', allProducts.length, 'منتج');
         
         // تحديث معلومات الاتصال إذا كانت موجودة
         if (storeData.storeInfo && storeData.storeInfo.whatsapp) {
@@ -22,6 +33,20 @@ async function init() {
             document.querySelectorAll('a[href*="wa.me"]').forEach(a => {
                 a.href = `https://wa.me/${wa}`;
             });
+        }
+        
+        // تحديث اللوغو إذا كان Base64
+        if (storeData.storeInfo && storeData.storeInfo.logo && storeData.storeInfo.logo.startsWith('data:')) {
+            document.querySelectorAll('img[src="logo.png"]').forEach(img => {
+                img.src = storeData.storeInfo.logo;
+            });
+        }
+        
+        // تحديث اسم المتجر
+        if (storeData.storeInfo && storeData.storeInfo.name) {
+            document.title = storeData.storeInfo.name + ' | مكملات غذائية أصلية';
+            const brandName = document.querySelector('.brand-name');
+            if (brandName) brandName.textContent = storeData.storeInfo.name;
         }
         
         renderCategories();
@@ -134,7 +159,7 @@ function showProductDetails(productId) {
             <p class="description">${product.description || ''}</p>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
                 <button class="btn btn-primary" onclick="addToCart(${product.id});closeProductModal();" style="flex:1;">
-                     أضف للسلة
+                    🛒 أضف للسلة
                 </button>
                 <button class="btn btn-outline" onclick="orderViaWhatsApp(${product.id})" style="flex:1;background:var(--success);color:white;border-color:var(--success);">
                     💬 اطلب عبر واتساب
@@ -213,7 +238,7 @@ function renderCartItems() {
     if (!container) return;
     
     if (cart.length === 0) {
-        container.innerHTML = '<div class="empty-cart"> السلة فارغة</div>';
+        container.innerHTML = '<div class="empty-cart">🛒 السلة فارغة</div>';
         if (footer) footer.style.display = 'none';
         return;
     }
@@ -258,7 +283,8 @@ function orderViaWhatsApp(productId) {
     if (!product) return;
     
     const wa = storeData.storeInfo ? storeData.storeInfo.whatsapp : '963900000000';
-    const message = `مرحباً ${storeData.storeInfo ? storeData.storeInfo.name : 'Champions Store'} 👋\n\nأريد طلب المنتج:\n📦 ${product.name}\n💰 السعر: ${product.price}$\n\nشكراً لكم!`;
+    const storeName = storeData.storeInfo ? storeData.storeInfo.name : 'Champions Store';
+    const message = `مرحباً ${storeName} 👋\n\nأريد طلب المنتج:\n📦 ${product.name}\n💰 السعر: ${product.price}$\n\nشكراً لكم!`;
     const url = `https://wa.me/${wa}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
 }
@@ -267,7 +293,8 @@ function checkoutViaWhatsApp() {
     if (cart.length === 0) return;
     
     const wa = storeData.storeInfo ? storeData.storeInfo.whatsapp : '963900000000';
-    let message = `مرحباً ${storeData.storeInfo ? storeData.storeInfo.name : 'Champions Store'} 👋\n\nأريد طلب المنتجات التالية:\n\n`;
+    const storeName = storeData.storeInfo ? storeData.storeInfo.name : 'Champions Store';
+    let message = `مرحباً ${storeName} 👋\n\nأريد طلب المنتجات التالية:\n\n`;
     let total = 0;
     
     cart.forEach((item, index) => {
