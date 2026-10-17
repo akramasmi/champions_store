@@ -1,4 +1,4 @@
-﻿{
+{
   "storeInfo": {
     "name": "Champions Store",
     "tagline": "مكملات غذائية أصلية 100% - Champions Supplements",
@@ -7,135 +7,57 @@
     "location": "دمشق - شحن لجميع المحافظات السورية"
   },
   "categories": [
-    { "id": "all", "name": "كل المنتجات", "icon": "🏋️" },
-    { "id": "creatine", "name": "كرياتين", "icon": "💪" },
-    { "id": "whey", "name": "واي بروتين", "icon": "" },
-    { "id": "mass-gainer", "name": "ماس جينر", "icon": "⚡" },
-    { "id": "amino", "name": "أحماض أمينية", "icon": "🧬" },
-    { "id": "pre-workout", "name": "بري وورك أوت", "icon": "🔥" },
-    { "id": "vitamins", "name": "فيتامينات", "icon": "💊" },
-    { "id": "fat-burner", "name": "حارق دهون", "icon": "🔥" }
+    {
+      "id": "all",
+      "name": "كل المنتجات",
+      "icon": "🏋️"
+    },
+    {
+      "id": "creatine",
+      "name": "كرياتين",
+      "icon": "💪"
+    },
+    {
+      "id": "whey",
+      "name": "واي بروتين",
+      "icon": ""
+    },
+    {
+      "id": "mass-gainer",
+      "name": "ماس جينر",
+      "icon": "⚡"
+    },
+    {
+      "id": "amino",
+      "name": "أحماض أمينية",
+      "icon": "🧬"
+    },
+    {
+      "id": "pre-workout",
+      "name": "بري وورك أوت",
+      "icon": "🔥"
+    },
+    {
+      "id": "vitamins",
+      "name": "فيتامينات",
+      "icon": "💊"
+    },
+    {
+      "id": "fat-burner",
+      "name": "حارق دهون",
+      "icon": "🔥"
+    }
   ],
   "products": [
     {
       "id": 1,
-      "name": "Allmax Mass 2.27kg",
-      "category": "mass-gainer",
-      "price": 48,
-      "oldPrice": 55,
-      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Allmax+Mass",
-      "description": "ماس جينر عالي الجودة لزيادة الوزن والكتلة العضلية",
-      "badge": "الأكثر مبيعاً"
-    },
-    {
-      "id": 2,
-      "name": "كرياتين Applied 1kg",
+      "name": "كرياتين غولد",
       "category": "creatine",
-      "price": 47,
-      "oldPrice": null,
-      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Applied+Creatine",
-      "description": "كرياتين مونوهيدرات نقي 100% من Applied Nutrition",
-      "badge": "جديد"
-    },
-    {
-      "id": 3,
-      "name": "Whey Trufuel 900g",
-      "category": "whey",
-      "price": 35,
-      "oldPrice": 40,
-      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Trufuel+Whey",
-      "description": "واي بروتين عالي الجودة بنكهات متعددة",
-      "badge": "خصم"
-    },
-    {
-      "id": 4,
-      "name": "Legendary Mass 7kg",
-      "category": "mass-gainer",
-      "price": 78,
-      "oldPrice": null,
-      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Legendary+Mass",
-      "description": "ماس جينر ضخم 7 كيلو لزيادة الوزن السريعة",
-      "badge": null
-    },
-    {
-      "id": 5,
-      "name": "Whey Nutrend 1kg",
-      "category": "whey",
-      "price": 32,
-      "oldPrice": null,
-      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Nutrend+Whey",
-      "description": "بروتين واي من Nutrend التشيكية",
-      "badge": null
-    },
-    {
-      "id": 6,
-      "name": "Whey C4 814g",
-      "category": "whey",
-      "price": 35,
-      "oldPrice": null,
-      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=C4+Whey",
-      "description": "واي بروتين من C4 الشهيرة",
-      "badge": null
-    },
-    {
-      "id": 7,
-      "name": "كرياتين One Raw 300g",
-      "category": "creatine",
-      "price": 16,
-      "oldPrice": null,
-      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=One+Raw+Creatine",
-      "description": "كرياتين نقي بدون إضافات",
-      "badge": null
-    },
-    {
-      "id": 8,
-      "name": "كرياتين Nutrend 300g",
-      "category": "creatine",
-      "price": 19,
-      "oldPrice": null,
-      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Nutrend+Creatine",
-      "description": "كرياتين بنكهات لذيذة من Nutrend",
-      "badge": null
-    },
-    {
-      "id": 9,
-      "name": "Naplam Pre-Workout 330g",
-      "category": "pre-workout",
       "price": 15,
       "oldPrice": null,
-      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Naplam",
-      "description": "محفز أداء قبل التمرين بطاقة عالية",
-      "badge": "مميز"
-    },
-    {
-      "id": 10,
-      "name": "BCAA Amino 300g",
-      "category": "amino",
-      "price": 22,
-      "oldPrice": 28,
-      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=BCAA+Amino",
-      "description": "أحماض أمينية BCAA لاستشفاء العضلات",
-      "badge": "خصم"
-    },
-    {
-      "id": 11,
-      "name": "Multivitamin Complex",
-      "category": "vitamins",
-      "price": 18,
-      "oldPrice": null,
-      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Multivitamin",
-      "description": "فيتامينات متعددة للصحة العامة",
-      "badge": null
-    },
-    {
-      "id": 12,
-      "name": "Fat Burner Pro 60 Caps",
-      "category": "fat-burner",
-      "price": 25,
-      "oldPrice": 30,
-      "image": "https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Fat+Burner",
-      "description": "حارق دهون قوي لتسريع عملية الأيض",
-      "badge": "خصم"
+      "description": "",
+      "badge": "الأكثر مبيعاً",
+      "image": "data:image/jpeg;base64,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"
     }
   ]
 }
