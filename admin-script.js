@@ -481,3 +481,131 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+// ===== GitHub Sync Injection & Logic =====
+window.addEventListener('DOMContentLoaded', () => {
+    const nav = document.querySelector('.admin-tabs');
+    const main = document.querySelector('.admin-content');
+    
+    if (nav && !document.getElementById('githubTabBtn')) {
+        // إضافة الزر
+        const btn = document.createElement('button');
+        btn.className = 'tab-btn';
+        btn.id = 'githubTabBtn';
+        btn.dataset.tab = 'github';
+        btn.textContent = ' GitHub Sync';
+        nav.appendChild(btn);
+
+        // إضافة المحتوى
+        if (main && !document.getElementById('githubTab')) {
+            const section = document.createElement('section');
+            section.className = 'tab-content';
+            section.id = 'githubTab';
+            section.innerHTML = \
+                <h2>مزامنة مع GitHub</h2>
+                <div class="github-form">
+                    <div class="info-box">
+                        <strong> كيف يعمل؟</strong><br>
+                        يرسل التعديلات إلى GitHub كـ Pull Request. أنت توافق عليه، وCloudflare ينشره تلقائياً.
+                        <br><br>
+                        <strong>🔑 إنشاء Token:</strong>
+                        <a href="https://github.com/settings/tokens/new?scopes=repo&description=Champions%20Store%20Admin" target="_blank">اضغط هنا لإنشاء Token</a>
+                    </div>
+                    <div class="form-group"><label>GitHub Username</label><input type="text" id="githubUsername" placeholder="your-username"></div>
+                    <div class="form-group"><label>Repository Name</label><input type="text" id="githubRepo" placeholder="champions-store"></div>
+                    <div class="form-group"><label>Personal Access Token (PAT)</label><input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx"></div>
+                    <div class="form-group"><label>اسم الـ Branch</label><input type="text" id="githubBranch" value="admin-update"></div>
+                    <button class="btn-github" id="sendPrBtn" onclick="sendPullRequest()">🚀 إرسال Pull Request</button>
+                    <div class="pr-status" id="prStatus"></div>
+                    <div class="token-warning">⚠️ <strong>تنبيه:</strong> الـ Token يُحفظ في متصفحك فقط (localStorage).</div>
+                </div>
+            \;
+            main.appendChild(section);
+        }
+    }
+});
+
+const GITHUB_STORAGE_KEY = 'championsGitHubConfig';
+
+function loadGitHubConfig() {
+    const saved = localStorage.getItem(GITHUB_STORAGE_KEY);
+    if (saved) {
+        try {
+            const config = JSON.parse(saved);
+            const u = document.getElementById('githubUsername'); if(u) u.value = config.username || '';
+            const r = document.getElementById('githubRepo'); if(r) r.value = config.repo || '';
+            const t = document.getElementById('githubToken'); if(t) t.value = config.token || '';
+            const b = document.getElementById('githubBranch'); if(b) b.value = config.branch || 'admin-update';
+        } catch (e) {}
+    }
+}
+
+function saveGitHubConfig() {
+    const config = {
+        username: document.getElementById('githubUsername').value.trim(),
+        repo: document.getElementById('githubRepo').value.trim(),
+        token: document.getElementById('githubToken').value.trim(),
+        branch: document.getElementById('githubBranch').value.trim() || 'admin-update'
+    };
+    localStorage.setItem(GITHUB_STORAGE_KEY, JSON.stringify(config));
+    return config;
+}
+
+async function sendPullRequest() {
+    const statusDiv = document.getElementById('prStatus');
+    const sendBtn = document.getElementById('sendPrBtn');
+    statusDiv.className = 'pr-status'; statusDiv.style.display = 'none';
+    
+    const config = saveGitHubConfig();
+    if (!config.username || !config.repo || !config.token) {
+        statusDiv.className = 'pr-status error'; statusDiv.textContent = 'يرجى ملء جميع الحقول'; statusDiv.style.display = 'block'; return;
+    }
+    
+    sendBtn.disabled = true; sendBtn.textContent = '⏳ جاري الإرسال...';
+    
+    try {
+        const baseUrl = \https://api.github.com/repos/\/\\;
+        const headers = { 'Authorization': \	oken \\, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
+        
+        statusDiv.className = 'pr-status'; statusDiv.style.background = '#e3f2fd'; statusDiv.style.borderRight = '4px solid #2196F3'; statusDiv.style.color = '#0d47a1'; statusDiv.style.display = 'block'; statusDiv.textContent = '📥 قراءة الملف الحالي...';
+        
+        let defaultBranch = 'main';
+        try { const repoInfo = await fetch(baseUrl, { headers }); const repoData = await repoInfo.json(); defaultBranch = repoData.default_branch || 'main'; } catch (e) {}
+        
+        const fileResponse = await fetch(\\/contents/products.json?ref=\\, { headers });
+        if (!fileResponse.ok) throw new Error('فشل في قراءة products.json. تأكد من البيانات.');
+        const fileData = await fileResponse.json();
+        
+        statusDiv.textContent = '🌿 إنشاء branch جديد...';
+        const branchName = \dmin-update-\\;
+        const refResponse = await fetch(\\/git/refs/heads/\\, { headers });
+        const refData = await refResponse.json();
+        
+        await fetch(\\/git/refs\, { method: 'POST', headers, body: JSON.stringify({ ref: \efs/heads/\\, sha: refData.object.sha }) });
+        
+        statusDiv.textContent = '📝 تحديث المنتجات...';
+        const newContent = JSON.stringify(storeData, null, 2);
+        const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
+        
+        await fetch(\\/contents/products.json\, { method: 'PUT', headers, body: JSON.stringify({ message: '🤖 تحديث تلقائي من لوحة الإدارة', content: encodedContent, sha: fileData.sha, branch: branchName }) });
+        
+        statusDiv.textContent = '🚀 إنشاء Pull Request...';
+        const prResponse = await fetch(\\/pulls\, { method: 'POST', headers, body: JSON.stringify({ title: '🔄 تحديث المنتجات من لوحة الإدارة', body: 'تم إنشاؤه تلقائياً من لوحة إدارة Champions Store.', head: branchName, base: defaultBranch }) });
+        
+        if (!prResponse.ok) throw new Error('فشل في إنشاء PR.');
+        const prData = await prResponse.json();
+        
+        statusDiv.className = 'pr-status success';
+        statusDiv.innerHTML = \<strong>✅ تم بنجاح!</strong><br><br><a href="\" target="_blank">👉 اضغط هنا للموافقة على PR #\</a>\;
+        showToast('تم إرسال Pull Request ✓');
+        
+    } catch (error) {
+        statusDiv.className = 'pr-status error'; statusDiv.textContent = \❌ خطأ: \\;
+    } finally {
+        sendBtn.disabled = false; sendBtn.textContent = '🚀 إرسال Pull Request';
+    }
+}
+
+// تحميل الإعدادات عند فتح التبويب
+document.addEventListener('click', (e) => {
+    if (e.target.dataset.tab === 'github') loadGitHubConfig();
+});
