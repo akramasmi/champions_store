@@ -320,7 +320,7 @@ document.getElementById('productModal').addEventListener('click', (e) => {
     if (e.target.id === 'productModal') closeProductModal();
 });
 
-// ===== GitHub Sync =====
+// ===== GitHub Config =====
 function loadGitHubConfig() {
     const saved = localStorage.getItem(GITHUB_STORAGE_KEY);
     if (saved) {
@@ -329,7 +329,6 @@ function loadGitHubConfig() {
             const u = document.getElementById('githubUsername'); if (u) u.value = config.username || '';
             const r = document.getElementById('githubRepo'); if (r) r.value = config.repo || '';
             const t = document.getElementById('githubToken'); if (t) t.value = config.token || '';
-            const b = document.getElementById('githubBranch'); if (b) b.value = config.branch || 'admin-update';
         } catch (e) {}
     }
 }
@@ -338,30 +337,36 @@ function saveGitHubConfig() {
     const config = {
         username: document.getElementById('githubUsername').value.trim(),
         repo: document.getElementById('githubRepo').value.trim(),
-        token: document.getElementById('githubToken').value.trim(),
-        branch: document.getElementById('githubBranch').value.trim() || 'admin-update'
+        token: document.getElementById('githubToken').value.trim()
     };
-    localStorage.setItem(GITHUB_STORAGE_KEY, JSON.stringify(config));
-    return config;
-}
-
-async function sendPullRequest() {
-    const statusDiv = document.getElementById('prStatus');
-    const sendBtn = document.getElementById('sendPrBtn');
-    statusDiv.className = 'pr-status';
-    statusDiv.style.display = 'none';
-
-    const config = saveGitHubConfig();
+    
     if (!config.username || !config.repo || !config.token) {
-        statusDiv.className = 'pr-status error';
-        statusDiv.textContent = 'يرجى ملء جميع الحقول';
-        statusDiv.style.display = 'block';
+        showToast('يرجى ملء جميع الحقول', 'error');
         return;
     }
+    
+    localStorage.setItem(GITHUB_STORAGE_KEY, JSON.stringify(config));
+    showToast('تم حفظ إعدادات GitHub ✓');
+}
 
-    sendBtn.disabled = true;
-    sendBtn.textContent = '⏳ جاري الإرسال...';
-
+// ===== النشر الفوري =====
+async function publishDirectly() {
+    const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
+    
+    if (!config || !config.username || !config.repo || !config.token) {
+        showToast('يرجى إعداد GitHub أولاً من تبويب GitHub Sync', 'error');
+        return;
+    }
+    
+    if (!confirm('⚠️ سيتم نشر التعديلات مباشرة على الموقع. هل أنت متأكد؟')) {
+        return;
+    }
+    
+    const publishBtn = document.querySelector('.btn-publish');
+    const originalText = publishBtn.textContent;
+    publishBtn.disabled = true;
+    publishBtn.textContent = ' جاري النشر...';
+    
     try {
         const baseUrl = 'https://api.github.com/repos/' + config.username + '/' + config.repo;
         const headers = {
@@ -369,97 +374,52 @@ async function sendPullRequest() {
             'Accept': 'application/vnd.github.v3+json',
             'Content-Type': 'application/json'
         };
-
-        statusDiv.className = 'pr-status';
-        statusDiv.style.background = '#e3f2fd';
-        statusDiv.style.borderRight = '4px solid #2196F3';
-        statusDiv.style.color = '#0d47a1';
-        statusDiv.style.display = 'block';
-        statusDiv.textContent = '🔍 التحقق من المستودع...';
-
-        const repoCheck = await fetch(baseUrl, { headers });
-        if (!repoCheck.ok) {
-            const err = await repoCheck.json();
-            throw new Error('فشل في الوصول إلى المستودع: ' + (err.message || 'تأكد من صحة البيانات'));
-        }
-
-        statusDiv.textContent = '📥 قراءة الملف الحالي...';
-        let defaultBranch = 'main';
-        try {
-            const repoInfo = await repoCheck.json();
-            defaultBranch = repoInfo.default_branch || 'main';
-        } catch (e) {}
-
+        
+        // 1. الحصول على الفرع الافتراضي
+        const repoResponse = await fetch(baseUrl, { headers });
+        if (!repoResponse.ok) throw new Error('فشل في الوصول إلى المستودع. تأكد من صحة البيانات وصلاحيات Token.');
+        const repoData = await repoResponse.json();
+        const defaultBranch = repoData.default_branch || 'main';
+        
+        // 2. قراءة الملف الحالي للحصول على SHA
         const fileResponse = await fetch(baseUrl + '/contents/products.json?ref=' + defaultBranch, { headers });
-        if (!fileResponse.ok) {
-            const err = await fileResponse.json();
-            throw new Error('فشل في قراءة products.json: ' + (err.message || 'تأكد من وجود الملف'));
-        }
+        if (!fileResponse.ok) throw new Error('فشل في قراءة products.json. تأكد من وجود الملف في المستودع.');
         const fileData = await fileResponse.json();
-
-        statusDiv.textContent = '🌿 إنشاء branch جديد...';
-        const branchName = 'admin-update-' + Date.now();
-        const refResponse = await fetch(baseUrl + '/git/refs/heads/' + defaultBranch, { headers });
-        if (!refResponse.ok) throw new Error('فشل في قراءة معلومات الـ branch');
-        const refData = await refResponse.json();
-
-        const createBranchResponse = await fetch(baseUrl + '/git/refs', {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ ref: 'refs/heads/' + branchName, sha: refData.object.sha })
-        });
-        if (!createBranchResponse.ok) {
-            const err = await createBranchResponse.json();
-            throw new Error('فشل في إنشاء branch: ' + (err.message || 'تأكد من صلاحيات الـ Token'));
-        }
-
-        statusDiv.textContent = '📝 تحديث المنتجات...';
+        
+        // 3. تحديث الملف مباشرة
         const newContent = JSON.stringify(storeData, null, 2);
         const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
-
+        
         const updateResponse = await fetch(baseUrl + '/contents/products.json', {
             method: 'PUT',
             headers,
             body: JSON.stringify({
-                message: '🤖 تحديث تلقائي من لوحة الإدارة',
+                message: '🤖 نشر فوري من لوحة الإدارة - ' + new Date().toLocaleString('ar-SY'),
                 content: encodedContent,
                 sha: fileData.sha,
-                branch: branchName
+                branch: defaultBranch
             })
         });
+        
         if (!updateResponse.ok) {
             const err = await updateResponse.json();
-            throw new Error('فشل في تحديث الملف: ' + (err.message || ''));
+            throw new Error('فشل في التحديث: ' + (err.message || 'تأكد من صلاحيات Token'));
         }
-
-        statusDiv.textContent = '🚀 إنشاء Pull Request...';
-        const prResponse = await fetch(baseUrl + '/pulls', {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-                title: '🔄 تحديث المنتجات من لوحة الإدارة',
-                body: 'تم إنشاؤه تلقائياً من لوحة إدارة Champions Store.\n\n**التغييرات:**\n- تحديث ملف products.json\n- التاريخ: ' + new Date().toLocaleString('ar-SY'),
-                head: branchName,
-                base: defaultBranch
-            })
-        });
-        if (!prResponse.ok) {
-            const err = await prResponse.json();
-            throw new Error('فشل في إنشاء PR: ' + (err.message || 'تأكد من صلاحيات الـ Token'));
-        }
-        const prData = await prResponse.json();
-
-        statusDiv.className = 'pr-status success';
-        statusDiv.innerHTML = '<strong>✅ تم بنجاح!</strong><br><br><a href="' + prData.html_url + '" target="_blank">👉 اضغط هنا للموافقة على PR #' + prData.number + '</a>';
-        showToast('تم إرسال Pull Request ✓');
-
+        
+        showToast('✅ تم النشر بنجاح! سيظهر التحديث خلال دقيقة.');
+        
     } catch (error) {
-        console.error('GitHub Sync Error:', error);
-        statusDiv.className = 'pr-status error';
-        statusDiv.textContent = '❌ خطأ: ' + error.message;
-        statusDiv.style.display = 'block';
+        console.error('Publish Error:', error);
+        showToast('❌ خطأ: ' + error.message, 'error');
     } finally {
-        sendBtn.disabled = false;
-        sendBtn.textContent = ' إرسال Pull Request';
+        publishBtn.disabled = false;
+        publishBtn.textContent = originalText;
     }
 }
+
+// تحميل إعدادات GitHub عند فتح التبويب
+document.addEventListener('click', (e) => {
+    if (e.target.dataset && e.target.dataset.tab === 'github') {
+        setTimeout(loadGitHubConfig, 100);
+    }
+});

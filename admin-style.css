@@ -506,3 +506,23 @@ body {
 .pr-status.error { background: #f8d7da; border-right: 4px solid #dc3545; color: #721c24; display: block; }
 .pr-status a { color: inherit; font-weight: bold; text-decoration: underline; }
 .token-warning { background: #fff3cd; border-right: 4px solid #ffc107; padding: 12px; border-radius: 8px; margin-top: 15px; font-size: 0.9rem; }
+/* زر النشر الفوري */
+.btn-publish {
+    background: #ff6b35;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: inherit;
+}
+
+.btn-publish:hover {
+    background: #e55a2b;
+}
+
+.btn-publish:disabled {
+    background: #999;
+    cursor: not-allowed;
+}

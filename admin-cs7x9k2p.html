@@ -24,11 +24,12 @@
 
     <div class="admin-panel" id="adminPanel" style="display:none;">
         <header class="admin-header">
-            <h1>⚙️ لوحة إدارة Champions Store</h1>
+            <h1>️ لوحة إدارة Champions Store</h1>
             <div class="header-actions">
                 <button class="btn-export" onclick="exportData()">📥 تصدير JSON</button>
-                <button class="btn-import" onclick="document.getElementById('importFile').click()"> استيراد JSON</button>
+                <button class="btn-import" onclick="document.getElementById('importFile').click()">📤 استيراد JSON</button>
                 <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+                <button class="btn-publish" onclick="publishDirectly()">🚀 نشر فوري على الموقع</button>
                 <button class="btn-logout" onclick="logout()">🚪 خروج</button>
             </div>
         </header>
@@ -57,7 +58,7 @@
                 <div class="form-group"><label>رقم واتساب</label><input type="text" id="storeWhatsapp" placeholder="963900000000"></div>
                 <div class="form-group"><label>حساب إنستغرام</label><input type="text" id="storeInstagram"></div>
                 <div class="form-group"><label>العنوان</label><input type="text" id="storeLocation"></div>
-                <button class="btn-save" onclick="saveStoreInfo()">💾 حفظ التغييرات</button>
+                <button class="btn-save" onclick="saveStoreInfo()"> حفظ التغييرات</button>
             </section>
 
             <section class="tab-content" id="logoTab">
@@ -74,25 +75,25 @@
                 <div class="form-group"><label>كلمة المرور الحالية</label><input type="password" id="currentPassword"></div>
                 <div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" id="newPassword"></div>
                 <div class="form-group"><label>تأكيد كلمة المرور الجديدة</label><input type="password" id="confirmPassword"></div>
-                <button class="btn-save" onclick="changePassword()">🔑 تغيير كلمة المرور</button>
+                <button class="btn-save" onclick="changePassword()"> تغيير كلمة المرور</button>
             </section>
 
             <section class="tab-content" id="githubTab">
-                <h2>مزامنة مع GitHub</h2>
+                <h2>إعدادات GitHub</h2>
                 <div class="github-form">
                     <div class="info-box">
-                        <strong>💡 كيف يعمل؟</strong><br>
-                        يرسل التعديلات إلى GitHub كـ Pull Request. أنت توافق عليه، وCloudflare ينشره تلقائياً.
+                        <strong>💡 كيف يعمل النشر الفوري؟</strong><br>
+                        عند الضغط على زر "🚀 نشر فوري على الموقع" في الأعلى، سترسل التعديلات مباشرة إلى GitHub بدون Pull Request.
                         <br><br>
                         <strong> إنشاء Token:</strong>
                         <a href="https://github.com/settings/tokens/new?scopes=repo&description=Champions%20Store%20Admin" target="_blank">اضغط هنا لإنشاء Token</a>
+                        <br><br>
+                        <strong>⚠️ مهم:</strong> يجب تحديد صلاحية <code>repo</code> كاملة عند إنشاء الـ Token.
                     </div>
                     <div class="form-group"><label>GitHub Username</label><input type="text" id="githubUsername" placeholder="your-username"></div>
                     <div class="form-group"><label>Repository Name</label><input type="text" id="githubRepo" placeholder="champions-store"></div>
                     <div class="form-group"><label>Personal Access Token (PAT)</label><input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx"></div>
-                    <div class="form-group"><label>اسم الـ Branch</label><input type="text" id="githubBranch" value="admin-update"></div>
-                    <button class="btn-github" id="sendPrBtn" onclick="sendPullRequest()">🚀 إرسال Pull Request</button>
-                    <div class="pr-status" id="prStatus"></div>
+                    <button class="btn-save" onclick="saveGitHubConfig()">💾 حفظ إعدادات GitHub</button>
                     <div class="token-warning">⚠️ <strong>تنبيه:</strong> الـ Token يُحفظ في متصفحك فقط (localStorage).</div>
                 </div>
             </section>
