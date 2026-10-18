@@ -7,6 +7,35 @@ const GITHUB_STORAGE_KEY = 'championsGitHubConfig';
 let storeData = null;
 let editingProductId = null;
 
+// ===== بيانات افتراضية للطوارئ =====
+const FALLBACK_DATA = {
+    storeInfo: {
+        name: 'Champions Store',
+        tagline: 'مكملات غذائية أصلية',
+        whatsapp: '963900000000',
+        instagram: 'champions_store',
+        location: 'دمشق'
+    },
+    categories: [
+        { id: 'all', name: 'كل المنتجات', icon: '🏋️' },
+        { id: 'creatine', name: 'كرياتين', icon: '💪' },
+        { id: 'whey', name: 'واي بروتين', icon: '🥛' },
+        { id: 'mass-gainer', name: 'ماس جينر', icon: '⚡' }
+    ],
+    products: [
+        {
+            id: 1,
+            name: 'منتج تجريبي',
+            category: 'whey',
+            price: 35,
+            oldPrice: null,
+            image: 'https://via.placeholder.com/400x400/1a1a1a/d4af37?text=Sample+Product',
+            description: 'هذا منتج تجريبي',
+            badge: 'جديد'
+        }
+    ]
+};
+
 // ===== التحقق من كلمة المرور =====
 function checkPassword() {
     const input = document.getElementById('passwordInput').value;
@@ -30,31 +59,64 @@ function logout() {
     document.getElementById('errorMsg').textContent = '';
 }
 
+// ===== تحميل البيانات مع معالجة أخطاء شاملة =====
 async function loadData() {
+    console.log('🔄 بدء تحميل البيانات...');
+    
     try {
+        // 1. محاولة تحميل من localStorage أولاً
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
+            console.log(' تحميل من localStorage');
             storeData = JSON.parse(saved);
-        } else {
-            const response = await fetch('products.json?v=' + Date.now());
-            if (!response.ok) throw new Error('فشل في تحميل products.json');
-            storeData = await response.json();
-            saveToLocalStorage();
+            console.log('✅ تم التحميل من localStorage:', storeData.products.length, 'منتج');
+            renderAll();
+            return;
         }
-        console.log('✅ تم تحميل البيانات:', storeData.products ? storeData.products.length : 0, 'منتج');
+        
+        // 2. محاولة تحميل من products.json
+        console.log('🌐 محاولة تحميل من products.json...');
+        const response = await fetch('products.json?v=' + Date.now());
+        
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status + ' - ' + response.statusText);
+        }
+        
+        const text = await response.text();
+        console.log('📄 محتوى الملف:', text.substring(0, 200) + '...');
+        
+        storeData = JSON.parse(text);
+        console.log('✅ تم التحميل من products.json:', storeData.products.length, 'منتج');
+        
+        // حفظ في localStorage
+        saveToLocalStorage();
         renderAll();
+        
     } catch (error) {
-        console.error('❌ خطأ:', error);
-        showToast('خطأ في تحميل البيانات: ' + error.message, 'error');
+        console.error('❌ خطأ في تحميل البيانات:', error);
+        console.error('التفاصيل:', error.message);
+        
+        // 3. استخدام البيانات الافتراضية
+        console.log('⚠️ استخدام البيانات الافتراضية');
+        storeData = FALLBACK_DATA;
+        
+        showToast('️ فشل تحميل products.json: ' + error.message + '. تم استخدام بيانات افتراضية.', 'error');
+        renderAll();
     }
 }
 
 function saveToLocalStorage() {
-    if (storeData) localStorage.setItem(STORAGE_KEY, JSON.stringify(storeData));
+    if (storeData) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(storeData));
+        console.log('💾 تم الحفظ في localStorage');
+    }
 }
 
 function renderAll() {
-    if (!storeData) return;
+    if (!storeData) {
+        console.error('❌ storeData غير محمّل');
+        return;
+    }
     renderProducts();
     renderStoreInfo();
     renderCategories();
@@ -73,9 +135,19 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 function renderProducts() {
     const container = document.getElementById('productsTable');
-    if (!container || !storeData || !storeData.products) return;
+    if (!container) {
+        console.error('❌ productsTable غير موجود');
+        return;
+    }
+    if (!storeData || !storeData.products) {
+        console.error('❌ لا توجد منتجات');
+        container.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد منتجات</p>';
+        return;
+    }
+    
     const categories = storeData.categories.filter(c => c.id !== 'all');
     let html = '<div class="product-row header"><div>صورة</div><div>الاسم</div><div>السعر</div><div>الفئة</div><div>إجراءات</div></div>';
+    
     storeData.products.forEach(product => {
         const cat = categories.find(c => c.id === product.category);
         html += '<div class="product-row">' +
@@ -88,7 +160,9 @@ function renderProducts() {
             '<button class="btn-delete" onclick="deleteProduct(' + product.id + ')">🗑️</button>' +
             '</div></div>';
     });
+    
     container.innerHTML = html;
+    console.log('✅ تم عرض', storeData.products.length, 'منتج');
 }
 
 function renderStoreInfo() {
@@ -243,10 +317,8 @@ function saveLogo() {
     if (url) {
         preview.src = url;
         storeData.storeInfo.logo = url;
-        console.log('💾 تم حفظ اللوغو كرابط:', url);
     } else if (preview.src && preview.src.startsWith('data:') && preview.src !== window.location.href) {
         storeData.storeInfo.logo = preview.src;
-        console.log('💾 تم حفظ اللوغو كـ Base64');
     } else {
         showToast('يرجى رفع صورة أو إدخال رابط', 'error');
         return;
@@ -365,7 +437,7 @@ async function publishDirectly() {
     const publishBtn = document.querySelector('.btn-publish');
     const originalText = publishBtn.textContent;
     publishBtn.disabled = true;
-    publishBtn.textContent = ' جاري النشر...';
+    publishBtn.textContent = '⏳ جاري النشر...';
     
     try {
         const baseUrl = 'https://api.github.com/repos/' + config.username + '/' + config.repo;
@@ -375,18 +447,15 @@ async function publishDirectly() {
             'Content-Type': 'application/json'
         };
         
-        // 1. الحصول على الفرع الافتراضي
         const repoResponse = await fetch(baseUrl, { headers });
-        if (!repoResponse.ok) throw new Error('فشل في الوصول إلى المستودع. تأكد من صحة البيانات وصلاحيات Token.');
+        if (!repoResponse.ok) throw new Error('فشل في الوصول إلى المستودع');
         const repoData = await repoResponse.json();
         const defaultBranch = repoData.default_branch || 'main';
         
-        // 2. قراءة الملف الحالي للحصول على SHA
         const fileResponse = await fetch(baseUrl + '/contents/products.json?ref=' + defaultBranch, { headers });
-        if (!fileResponse.ok) throw new Error('فشل في قراءة products.json. تأكد من وجود الملف في المستودع.');
+        if (!fileResponse.ok) throw new Error('فشل في قراءة products.json');
         const fileData = await fileResponse.json();
         
-        // 3. تحديث الملف مباشرة
         const newContent = JSON.stringify(storeData, null, 2);
         const encodedContent = btoa(unescape(encodeURIComponent(newContent)));
         
@@ -394,7 +463,7 @@ async function publishDirectly() {
             method: 'PUT',
             headers,
             body: JSON.stringify({
-                message: '🤖 نشر فوري من لوحة الإدارة - ' + new Date().toLocaleString('ar-SY'),
+                message: ' نشر فوري من لوحة الإدارة - ' + new Date().toLocaleString('ar-SY'),
                 content: encodedContent,
                 sha: fileData.sha,
                 branch: defaultBranch
@@ -403,7 +472,7 @@ async function publishDirectly() {
         
         if (!updateResponse.ok) {
             const err = await updateResponse.json();
-            throw new Error('فشل في التحديث: ' + (err.message || 'تأكد من صلاحيات Token'));
+            throw new Error('فشل في التحديث: ' + (err.message || ''));
         }
         
         showToast('✅ تم النشر بنجاح! سيظهر التحديث خلال دقيقة.');
@@ -417,7 +486,6 @@ async function publishDirectly() {
     }
 }
 
-// تحميل إعدادات GitHub عند فتح التبويب
 document.addEventListener('click', (e) => {
     if (e.target.dataset && e.target.dataset.tab === 'github') {
         setTimeout(loadGitHubConfig, 100);
