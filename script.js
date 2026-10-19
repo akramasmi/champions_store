@@ -48,7 +48,6 @@ function updateSiteContent() {
         document.title = info.name + ' | مكملات غذائية';
         const brandElements = document.querySelectorAll('.brand-name, .footer-brand h3');
         brandElements.forEach(el => {
-            // الحفاظ على تنسيق span للون الذهبي إذا وجد
             if (el.tagName === 'H3' && el.innerHTML.includes('span')) {
                 el.innerHTML = el.innerHTML.replace(/Champions\s*<span.*?>Store<\/span>/i, `${info.name} <span class="gold">Store</span>`);
             } else {
@@ -57,40 +56,29 @@ function updateSiteContent() {
         });
     }
 
-    // 2. تحديث الوصف (Hero Section)
+    // 2. تحديث الوصف
     if (info.tagline) {
         const heroSub = document.querySelector('.hero-subtitle');
         if (heroSub) heroSub.textContent = info.tagline;
     }
 
-    // 3. تحديث العنوان والموقع
+    // 3. تحديث العنوان
     if (info.location) {
         const heroDesc = document.querySelector('.hero-desc');
         if (heroDesc) heroDesc.textContent = info.location;
         
-        // تحديث بطاقة الموقع في قسم التواصل
         const contactCards = document.querySelectorAll('.contact-card p');
         contactCards.forEach(p => {
             if (p.previousElementSibling && p.previousElementSibling.textContent.includes('الموقع')) {
                 p.textContent = info.location;
             }
         });
-
-        // تحديث الفوتر
-        const footerBrandP = document.querySelector('.footer-brand p');
-        if (footerBrandP) footerBrandP.textContent = info.tagline || 'مكملات غذائية أصلية';
     }
 
-    // 4. تحديث أرقام الواتساب في جميع أنحاء الموقع
+    // 4. تحديث الواتساب
     if (info.whatsapp) {
         const waUrl = `https://wa.me/${info.whatsapp}`;
-        
-        // تحديث جميع الروابط
-        document.querySelectorAll('a[href*="wa.me"]').forEach(a => {
-            a.href = waUrl;
-        });
-
-        // تحديث النصوص التي تعرض الرقم
+        document.querySelectorAll('a[href*="wa.me"]').forEach(a => { a.href = waUrl; });
         const footerContactPs = document.querySelectorAll('.footer-contact p');
         footerContactPs.forEach(p => {
             if (p.textContent.includes('واتساب')) {
@@ -101,9 +89,24 @@ function updateSiteContent() {
 
     // 5. تحديث اللوغو
     if (info.logo) {
-        document.querySelectorAll('.nav-logo, .about-image img').forEach(img => {
-            img.src = info.logo;
-        });
+        document.querySelectorAll('.nav-logo, .about-image img').forEach(img => { img.src = info.logo; });
+    }
+
+    // 6. تحديث قسم "من نحن" (جديد)
+    if (storeData.about) {
+        const aboutTitle = document.querySelector('.about-text h3');
+        if (aboutTitle && storeData.about.title) aboutTitle.textContent = storeData.about.title;
+        
+        const aboutDesc = document.querySelector('.about-text > p');
+        if (aboutDesc && storeData.about.description) aboutDesc.textContent = storeData.about.description;
+        
+        if (storeData.about.features) {
+            const featuresList = document.querySelector('.about-list');
+            if (featuresList) {
+                const features = storeData.about.features.split('\n').filter(f => f.trim());
+                featuresList.innerHTML = features.map(f => `<li>${f}</li>`).join('');
+            }
+        }
     }
 }
 
