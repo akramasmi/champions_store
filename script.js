@@ -17,6 +17,21 @@ async function init() {
         renderProducts();
         updateCartUI();
         setupEventListeners();
+        
+        // Scroll animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+        
+        document.querySelectorAll('.product-card, .contact-card, .stat, .about-text, .about-image').forEach((el, index) => {
+            el.classList.add('reveal');
+            el.style.transitionDelay = `${index * 0.1}s`;
+            observer.observe(el);
+        });
     } catch (error) {
         console.error('خطأ:', error);
         document.getElementById('productGrid').innerHTML = 
@@ -246,7 +261,7 @@ function checkoutViaWhatsApp() {
     cart.forEach((item, index) => {
         const itemTotal = item.price * item.quantity;
         total += itemTotal;
-        message += `${index + 1}.  ${item.name}\n   الكمية: ${item.quantity} | السعر: ${itemTotal}$\n\n`;
+        message += `${index + 1}. 📦 ${item.name}\n   الكمية: ${item.quantity} | السعر: ${itemTotal}$\n\n`;
     });
     message += `━━━━━━━━━━━━━━\n💰 المجموع الكلي: ${total.toFixed(2)} $\n\n📍 العنوان: \n📱 رقم الهاتف: \n\nشكراً لكم!`;
     window.open(`https://wa.me/${wa}?text=${encodeURIComponent(message)}`, '_blank');
