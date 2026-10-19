@@ -246,18 +246,6 @@ h1, h2, h3, h4 {
     overflow: hidden;
 }
 
-.hero::before {
-    content: '';
-    position: absolute;
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, rgba(200, 162, 93, 0.15) 0%, transparent 70%);
-    border-radius: 50%;
-    top: -100px;
-    right: -100px;
-    filter: blur(40px);
-}
-
 .hero-content {
     position: relative;
     z-index: 1;
@@ -302,7 +290,6 @@ h1, h2, h3, h4 {
     gap: 16px;
     justify-content: center;
     flex-wrap: wrap;
-    margin-bottom: 50px;
 }
 
 /* Sections */
@@ -380,7 +367,7 @@ h1, h2, h3, h4 {
     border-color: var(--gold);
 }
 
-/* Products */
+/* Products - مع إصلاح الـ badge */
 .products-section {
     padding: 80px 0;
 }
@@ -391,14 +378,13 @@ h1, h2, h3, h4 {
     gap: 24px;
 }
 
-/* ✅ إصلاح: product-card يجب أن يكون relative لكي يعمل الـ badge */
 .product-card {
     background: var(--gradient-card);
     border-radius: var(--radius-lg);
     overflow: hidden;
     transition: all var(--transition-slow);
     border: 1px solid rgba(200, 162, 93, 0.1);
-    position: relative;
+    position: relative; /* مهم لإظهار الـ badge */
 }
 
 .product-card:hover {
@@ -407,7 +393,6 @@ h1, h2, h3, h4 {
     box-shadow: var(--shadow-gold-lg);
 }
 
-/* ✅ إصلاح: badge يظهر دائماً الآن */
 .product-badge {
     position: absolute;
     top: 12px;
@@ -418,8 +403,8 @@ h1, h2, h3, h4 {
     border-radius: var(--radius-full);
     font-size: 0.75rem;
     font-weight: 700;
-    z-index: 10;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    z-index: 10; /* رفع الـ z-index */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .product-badge.sale {
@@ -427,11 +412,10 @@ h1, h2, h3, h4 {
     color: white;
 }
 
-/* ✅ تقليل ارتفاع صورة المنتج */
 .product-image-wrapper {
     position: relative;
     overflow: hidden;
-    height: 220px;
+    aspect-ratio: 4/5; /* تقليل الارتفاع */
     background: rgba(0, 0, 0, 0.3);
 }
 
@@ -447,7 +431,7 @@ h1, h2, h3, h4 {
 }
 
 .product-info {
-    padding: 16px;
+    padding: 20px;
 }
 
 .product-category {
@@ -460,13 +444,12 @@ h1, h2, h3, h4 {
 }
 
 .product-name {
-    font-size: 1.1rem;
-    margin-bottom: 10px;
+    font-size: 1.15rem;
+    margin-bottom: 12px;
     color: var(--white);
     font-weight: 700;
     cursor: pointer;
     transition: color var(--transition-fast);
-    line-height: 1.3;
 }
 
 .product-name:hover { color: var(--gold); }
@@ -475,11 +458,11 @@ h1, h2, h3, h4 {
     display: flex;
     align-items: baseline;
     gap: 10px;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .current-price {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: 800;
     background: var(--gradient-gold);
     -webkit-background-clip: text;
@@ -490,7 +473,7 @@ h1, h2, h3, h4 {
 .old-price {
     text-decoration: line-through;
     color: var(--text-tertiary);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
 }
 
 .product-actions {
@@ -501,14 +484,14 @@ h1, h2, h3, h4 {
 .add-to-cart-btn,
 .view-btn {
     flex: 1;
-    padding: 11px;
+    padding: 12px;
     border: none;
     border-radius: var(--radius-md);
     cursor: pointer;
     font-weight: 600;
     transition: all var(--transition-base);
     font-family: inherit;
-    font-size: 0.88rem;
+    font-size: 0.9rem;
 }
 
 .add-to-cart-btn {
@@ -589,17 +572,6 @@ h1, h2, h3, h4 {
     position: relative;
 }
 
-.about-image::before {
-    content: '';
-    position: absolute;
-    inset: -20px;
-    background: var(--gradient-gold);
-    border-radius: 50%;
-    opacity: 0.15;
-    filter: blur(50px);
-    z-index: 0;
-}
-
 .about-image img {
     width: 100%;
     max-width: 450px;
@@ -608,8 +580,6 @@ h1, h2, h3, h4 {
     display: block;
     margin: 0 auto;
     border: 4px solid var(--gold);
-    position: relative;
-    z-index: 1;
 }
 
 /* Contact */
@@ -761,12 +731,6 @@ h1, h2, h3, h4 {
     overflow-y: auto;
     border: 1px solid rgba(200, 162, 93, 0.2);
     box-shadow: var(--shadow-md);
-    animation: slideUp 0.3s var(--ease-spring);
-}
-
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
 }
 
 .modal-header {
@@ -968,12 +932,7 @@ h1, h2, h3, h4 {
     .nav-links.active { display: flex; }
     .menu-toggle { display: block; }
     
-    .hero {
-        padding: 70px 0 60px;
-    }
-    
-    .hero::before { display: none; }
-    .hero-title { animation: none; }
+    .hero { padding: 70px 0 60px; }
     
     .hero-buttons {
         flex-direction: column;
@@ -988,36 +947,32 @@ h1, h2, h3, h4 {
     
     .section-header { margin-bottom: 32px; }
     
-    /* Products 2 في الصف مع إطار أصغر */
+    /* Products 2 في الصف */
     .product-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
+        gap: 12px;
     }
     
-    .product-image-wrapper {
-        height: 130px;
-    }
-    
-    .product-info { padding: 10px; }
-    .product-name { font-size: 0.88rem; margin-bottom: 6px; }
-    .current-price { font-size: 1.15rem; }
-    .old-price { font-size: 0.8rem; }
+    .product-info { padding: 12px; }
+    .product-name { font-size: 0.95rem; margin-bottom: 8px; }
+    .current-price { font-size: 1.3rem; }
+    .old-price { font-size: 0.85rem; }
     
     .product-actions {
         flex-direction: column;
-        gap: 5px;
+        gap: 6px;
     }
     
     .add-to-cart-btn, .view-btn {
-        padding: 9px;
-        font-size: 0.8rem;
+        padding: 10px;
+        font-size: 0.85rem;
     }
     
     .product-badge {
-        top: 6px;
-        right: 6px;
-        padding: 4px 8px;
-        font-size: 0.65rem;
+        top: 8px;
+        right: 8px;
+        padding: 4px 10px;
+        font-size: 0.7rem;
     }
     
     .about-content {
@@ -1026,7 +981,6 @@ h1, h2, h3, h4 {
     }
     
     .about-image img { max-width: 280px; }
-    .about-image::before { display: none; }
     
     .contact-grid {
         grid-template-columns: 1fr;
@@ -1052,9 +1006,8 @@ h1, h2, h3, h4 {
 }
 
 @media (max-width: 380px) {
-    .product-image-wrapper { height: 110px; }
-    .product-name { font-size: 0.82rem; }
-    .current-price { font-size: 1.05rem; }
+    .product-name { font-size: 0.9rem; }
+    .current-price { font-size: 1.2rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
