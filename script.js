@@ -352,5 +352,36 @@ function setupEventListeners() {
         });
     });
 }
+// ===== Scroll Animations =====
+const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+};
 
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+        }
+    });
+}, observerOptions);
+
+// تطبيق الأنيميشن على العناصر
+document.addEventListener('DOMContentLoaded', () => {
+    const animatedElements = document.querySelectorAll('.product-card, .contact-card, .feature, .about-text, .about-image');
+    animatedElements.forEach(el => {
+        el.classList.add('fade-in');
+        observer.observe(el);
+    });
+    
+    // Navbar scroll effect
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    });
+});
 document.addEventListener('DOMContentLoaded', init);
