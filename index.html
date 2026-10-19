@@ -8,10 +8,13 @@
     <title>Champions Store | مكملات غذائية فاخرة</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="logo.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <!-- شريط التنقل -->
+    <!-- Navigation -->
     <nav class="navbar" id="navbar">
         <div class="container nav-container">
             <div class="logo-area">
@@ -26,14 +29,14 @@
             </ul>
             <div class="nav-actions">
                 <button class="cart-btn" id="cartBtn">
-                    🛒 <span class="cart-count" id="cartCount">0</span>
+                     <span class="cart-count" id="cartCount">0</span>
                 </button>
                 <button class="menu-toggle" id="menuToggle">☰</button>
             </div>
         </div>
     </nav>
 
-    <!-- القسم الرئيسي -->
+    <!-- Hero Section -->
     <section class="hero" id="home">
         <div class="container hero-content">
             <h1 class="hero-title">Champions <span class="gold">Store</span></h1>
@@ -43,18 +46,30 @@
                 <a href="#products" class="btn btn-primary">تصفح المنتجات</a>
                 <a href="https://wa.me/963900000000" target="_blank" class="btn btn-outline">تواصل معنا</a>
             </div>
-            <div class="hero-features">
-                <div class="feature">✅ منتجات أصلية 100%</div>
-                <div class="feature">🚚 شحن سريع لجميع المحافظات</div>
-                <div class="feature">💯 ضمان الجودة</div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <div class="stat-number">500+</div>
+                    <div class="stat-label">منتج متوفر</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">1000+</div>
+                    <div class="stat-label">عميل سعيد</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">منتجات أصلية</div>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- قسم البحث والفلاتر -->
+    <!-- Products Section -->
     <section class="filters-section" id="products">
         <div class="container">
-            <h2 class="section-title">منتجاتنا <span class="gold">المميزة</span></h2>
+            <div class="section-header">
+                <h2 class="section-title">منتجاتنا <span class="gold">المميزة</span></h2>
+                <p class="section-subtitle">اكتشف مجموعتنا الفاخرة من المكملات الغذائية</p>
+            </div>
             
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="ابحث عن منتجك المفضل...">
@@ -66,7 +81,6 @@
         </div>
     </section>
 
-    <!-- شبكة المنتجات -->
     <section class="products-section">
         <div class="container">
             <div class="product-grid" id="productGrid">
@@ -78,17 +92,20 @@
         </div>
     </section>
 
-    <!-- من نحن -->
+    <!-- About Section -->
     <section class="about-section" id="about">
         <div class="container">
-            <h2 class="section-title">من <span class="gold">نحن</span></h2>
+            <div class="section-header">
+                <h2 class="section-title">من <span class="gold">نحن</span></h2>
+                <p class="section-subtitle">قصتنا والتزامنا بالجودة</p>
+            </div>
             <div class="about-content">
                 <div class="about-text">
                     <h3>Champions Store Supplements</h3>
                     <p>متجر متخصص في تقديم أفضل المكملات الغذائية للرياضيين. نحرص على توفير منتجات أصلية 100% من أشهر الماركات العالمية بأسعار تنافسية.</p>
                     <ul class="about-list">
                         <li>🏆 منتجات أوريجنال مكفولة 100%</li>
-                        <li>📍 مقرنا الرئيسي في دمشق</li>
+                        <li> مقرنا الرئيسي في دمشق</li>
                         <li>🚚 شحن سريع لجميع المحافظات السورية</li>
                         <li>💬 دعم فني متواصل عبر واتساب</li>
                         <li>⭐ خدمة عملاء متميزة</li>
@@ -101,10 +118,13 @@
         </div>
     </section>
 
-    <!-- تواصل معنا -->
+    <!-- Contact Section -->
     <section class="contact-section" id="contact">
         <div class="container">
-            <h2 class="section-title">تواصل <span class="gold">معنا</span></h2>
+            <div class="section-header">
+                <h2 class="section-title">تواصل <span class="gold">معنا</span></h2>
+                <p class="section-subtitle">نحن هنا لمساعدتك في كل خطوة</p>
+            </div>
             <div class="contact-grid">
                 <a href="https://wa.me/963900000000" target="_blank" class="contact-card">
                     <div class="contact-icon">💬</div>
@@ -117,7 +137,7 @@
                     <p>تابعنا لأحدث العروض والمنتجات</p>
                 </a>
                 <div class="contact-card">
-                    <div class="contact-icon">📍</div>
+                    <div class="contact-icon"></div>
                     <h3>موقعنا</h3>
                     <p>دمشق - سوريا</p>
                 </div>
@@ -125,7 +145,7 @@
         </div>
     </section>
 
-    <!-- الفوتر -->
+    <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
@@ -156,16 +176,14 @@
         </div>
     </footer>
 
-    <!-- مودال السلة -->
+    <!-- Cart Modal -->
     <div class="modal" id="cartModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>🛒 سلة المشتريات</h2>
                 <button class="close-btn" id="closeCart">✕</button>
             </div>
-            <div class="modal-body" id="cartItems">
-                <!-- يتم توليدها تلقائياً -->
-            </div>
+            <div class="modal-body" id="cartItems"></div>
             <div class="modal-footer" id="cartFooter" style="display:none;">
                 <div class="cart-total">
                     <span>المجموع الكلي:</span>
@@ -178,20 +196,16 @@
         </div>
     </div>
 
-    <!-- مودال تفاصيل المنتج -->
+    <!-- Product Modal -->
     <div class="modal" id="productModal">
         <div class="modal-content product-modal">
             <button class="close-btn" id="closeProduct">✕</button>
-            <div id="productDetails">
-                <!-- يتم توليده تلقائياً -->
-            </div>
+            <div id="productDetails"></div>
         </div>
     </div>
 
-    <!-- زر الواتساب العائم -->
-    <a href="https://wa.me/963900000000" target="_blank" class="floating-whatsapp">
-        💬
-    </a>
+    <!-- Floating WhatsApp -->
+    <a href="https://wa.me/963900000000" target="_blank" class="floating-whatsapp">💬</a>
 
     <script>
         document.write('<script src="script.js?v=' + Date.now() + '"><\/script>');
