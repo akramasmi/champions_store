@@ -526,3 +526,44 @@ body {
     background: #999;
     cursor: not-allowed;
 }
+/* زر إعادة التحميل */
+.btn-reload {
+    background: #9b59b6;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: inherit;
+}
+
+.btn-reload:hover {
+    background: #8e44ad;
+}
+
+.btn-reload:disabled {
+    background: #999;
+    cursor: not-allowed;
+}
+
+/* زر النشر الفوري */
+.btn-publish {
+    background: #ff6b35;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: inherit;
+}
+
+.btn-publish:hover {
+    background: #e55a2b;
+}
+
+.btn-publish:disabled {
+    background: #999;
+    cursor: not-allowed;
+}
