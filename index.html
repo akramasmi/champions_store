@@ -17,7 +17,7 @@
     <nav class="navbar" id="navbar">
         <div class="container nav-container">
             <div class="logo-area">
-                <img src="logo.png" alt="Champions Store" class="nav-logo" loading="eager">
+                <img src="logo.png" alt="Champions Store" class="nav-logo" loading="eager" onerror="this.style.display='none'">
                 <span class="brand-name">Champions <span class="gold">Store</span></span>
             </div>
             <ul class="nav-links">
@@ -27,10 +27,7 @@
                 <li><a href="#contact">تواصل</a></li>
             </ul>
             <div class="nav-actions">
-                <button class="cart-btn" id="cartBtn">
-                    <span>🛒</span>
-                    <span class="cart-count" id="cartCount">0</span>
-                </button>
+                <button class="cart-btn" id="cartBtn"> <span class="cart-count" id="cartCount">0</span></button>
                 <button class="menu-toggle" id="menuToggle">☰</button>
             </div>
         </div>
@@ -44,6 +41,20 @@
             <div class="hero-buttons">
                 <a href="#products" class="btn btn-primary">تصفح المنتجات</a>
                 <a href="https://wa.me/963900000000" target="_blank" class="btn btn-outline">تواصل معنا</a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <div class="stat-number">500+</div>
+                    <div class="stat-label">منتج متوفر</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">1000+</div>
+                    <div class="stat-label">عميل سعيد</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">منتجات أصلية</div>
+                </div>
             </div>
         </div>
     </section>
@@ -83,12 +94,12 @@
                     <ul class="about-list">
                         <li>🏆 منتجات أصلية مكفولة</li>
                         <li>📍 مقرنا في دمشق</li>
-                        <li>🚚 شحن لجميع المحافظات</li>
+                        <li> شحن لجميع المحافظات</li>
                         <li>💬 دعم عبر واتساب</li>
                     </ul>
                 </div>
                 <div class="about-image">
-                    <img src="logo.png" alt="Champions Store" loading="lazy">
+                    <img src="logo.png" alt="Champions Store" loading="lazy" onerror="this.src='https://via.placeholder.com/450x450/1c1c1e/c8a25d?text=CS'">
                 </div>
             </div>
         </div>
@@ -124,7 +135,7 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-brand">
-                    <img src="logo.png" alt="Champions Store" class="footer-logo" loading="lazy">
+                    <img src="logo.png" alt="Champions Store" class="footer-logo" loading="lazy" onerror="this.style.display='none'">
                     <h3>Champions <span class="gold">Store</span></h3>
                     <p>مكملات غذائية فاخرة</p>
                 </div>
@@ -139,7 +150,7 @@
                 </div>
                 <div class="footer-contact">
                     <h4>تواصل</h4>
-                    <p>📱 واتساب: +963900000000</p>
+                    <p> واتساب: +963900000000</p>
                     <p>📍 دمشق، سوريا</p>
                 </div>
             </div>
@@ -175,6 +186,8 @@
 
     <a href="https://wa.me/963900000000" target="_blank" class="floating-whatsapp">💬</a>
 
-    <script src="script.js"></script>
+    <script>
+        document.write('<script src="script.js?v=' + Date.now() + '"><\/script>');
+    </script>
 </body>
 </html>
