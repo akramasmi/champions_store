@@ -1,19 +1,29 @@
 ﻿/* ===== المتغيرات والإعدادات الأساسية ===== */
 :root {
-    --primary: #0a0a0a;
-    --secondary: #1a1a1a;
-    --gold: #d4af37;
-    --gold-light: #f4d03f;
-    --gold-dark: #b8860b;
+    /* الألوان الجديدة */
+    --primary: #1c1c1e;       /* اللون الأساسي الداكن */
+    --secondary: #2c2c2e;     /* لون ثانوي داكن للكروت والأقسام */
+    --gold: #c8a25d;          /* اللون الذهبي الأساسي */
+    --gold-light: #e2c37e;    /* اللون الذهبي الفاتح */
+    --gold-dark: #a68445;     /* ذهبي غامق للتأثيرات والـ Hover */
+    
+    /* الألوان الأساسية الأخرى */
     --white: #ffffff;
-    --gray: #f4f4f4;
-    --text: #333333;
-    --text-light: #666666;
-    --success: #25D366;
+    --bg: #121214;            /* خلفية الموقع داكنة لإبراز الذهبي */
+    --text: #e0e0e0;          /* نص فاتح للقراءة على الخلفية الداكنة */
+    --text-light: #a0a0a0;
+    --success: #25D366;       /* لون واتساب */
     --danger: #e74c3c;
-    --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    --shadow-gold: 0 4px 20px rgba(212, 175, 55, 0.3);
+    
+    /* التأثيرات */
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --shadow-gold: 0 4px 20px rgba(200, 162, 93, 0.25);
     --transition: all 0.3s ease;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
 }
 
 * {
