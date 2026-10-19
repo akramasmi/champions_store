@@ -18,20 +18,25 @@ async function init() {
         updateCartUI();
         setupEventListeners();
         
-        // Scroll animations
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                }
+        // Lazy loading للصور
+        if ('IntersectionObserver' in window) {
+            const imgObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        if (img.dataset.src) {
+                            img.src = img.dataset.src;
+                            img.removeAttribute('data-src');
+                        }
+                        imgObserver.unobserve(img);
+                    }
+                });
+            }, { rootMargin: '100px' });
+            
+            document.querySelectorAll('img[data-src]').forEach(img => {
+                imgObserver.observe(img);
             });
-        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-        
-        document.querySelectorAll('.product-card, .contact-card, .stat, .about-text, .about-image').forEach((el, index) => {
-            el.classList.add('reveal');
-            el.style.transitionDelay = `${index * 0.1}s`;
-            observer.observe(el);
-        });
+        }
     } catch (error) {
         console.error('خطأ:', error);
         document.getElementById('productGrid').innerHTML = 
@@ -123,7 +128,7 @@ function renderProducts() {
         return `<div class="product-card">
             ${product.badge ? `<span class="product-badge ${badgeClass}">${product.badge}</span>` : ''}
             <div class="product-image-wrapper">
-                <img src="${product.image}" alt="${product.name}" class="product-image" 
+                <img src="${product.image}" alt="${product.name}" class="product-image" loading="lazy"
                      onclick="showProductDetails(${product.id})"
                      onerror="this.src='https://via.placeholder.com/400x400/1c1c1e/c8a25d?text=No+Image'">
             </div>
@@ -215,7 +220,7 @@ function renderCartItems() {
     }
     container.innerHTML = cart.map(item => `
         <div class="cart-item">
-            <img src="${item.image}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/60x60/1c1c1e/c8a25d?text=No+Image'">
+            <img src="${item.image}" alt="${item.name}" loading="lazy" onerror="this.src='https://via.placeholder.com/60x60/1c1c1e/c8a25d?text=No+Image'">
             <div class="cart-item-info">
                 <div class="cart-item-name">${item.name}</div>
                 <div class="cart-item-price">${item.price} $</div>
@@ -248,7 +253,7 @@ function orderViaWhatsApp(productId) {
     if (!product) return;
     const wa = storeData.storeInfo ? storeData.storeInfo.whatsapp : '963900000000';
     const storeName = storeData.storeInfo ? storeData.storeInfo.name : 'Champions Store';
-    const message = `مرحباً ${storeName} 👋\n\nأريد طلب المنتج:\n📦 ${product.name}\n💰 السعر: ${product.price}$\n\nشكراً لكم!`;
+    const message = `مرحباً ${storeName} \n\nأريد طلب المنتج:\n ${product.name}\n💰 السعر: ${product.price}$\n\nشكراً لكم!`;
     window.open(`https://wa.me/${wa}?text=${encodeURIComponent(message)}`, '_blank');
 }
 
@@ -263,7 +268,7 @@ function checkoutViaWhatsApp() {
         total += itemTotal;
         message += `${index + 1}. 📦 ${item.name}\n   الكمية: ${item.quantity} | السعر: ${itemTotal}$\n\n`;
     });
-    message += `━━━━━━━━━━━━━━\n💰 المجموع الكلي: ${total.toFixed(2)} $\n\n📍 العنوان: \n📱 رقم الهاتف: \n\nشكراً لكم!`;
+    message += `━━━━━━━━━━━━━━\n💰 المجموع الكلي: ${total.toFixed(2)} $\n\n العنوان: \n📱 رقم الهاتف: \n\nشكراً لكم!`;
     window.open(`https://wa.me/${wa}?text=${encodeURIComponent(message)}`, '_blank');
 }
 
@@ -322,9 +327,16 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
     
     const navbar = document.getElementById('navbar');
+    let ticking = false;
     window.addEventListener('scroll', () => {
-        if (window.scrollY > 50) navbar.classList.add('scrolled');
-        else navbar.classList.remove('scrolled');
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                if (window.scrollY > 50) navbar.classList.add('scrolled');
+                else navbar.classList.remove('scrolled');
+                ticking = false;
+            });
+            ticking = true;
+        }
     });
     
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
