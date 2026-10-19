@@ -17,26 +17,6 @@ async function init() {
         renderProducts();
         updateCartUI();
         setupEventListeners();
-        
-        // Lazy loading للصور
-        if ('IntersectionObserver' in window) {
-            const imgObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const img = entry.target;
-                        if (img.dataset.src) {
-                            img.src = img.dataset.src;
-                            img.removeAttribute('data-src');
-                        }
-                        imgObserver.unobserve(img);
-                    }
-                });
-            }, { rootMargin: '100px' });
-            
-            document.querySelectorAll('img[data-src]').forEach(img => {
-                imgObserver.observe(img);
-            });
-        }
     } catch (error) {
         console.error('خطأ:', error);
         document.getElementById('productGrid').innerHTML = 
@@ -129,18 +109,19 @@ function renderProducts() {
             ${product.badge ? `<span class="product-badge ${badgeClass}">${product.badge}</span>` : ''}
             <div class="product-image-wrapper">
                 <img src="${product.image}" alt="${product.name}" class="product-image" loading="lazy"
-                     onclick="showProductDetails(${product.id})"
-                     onerror="this.src='https://via.placeholder.com/400x400/1c1c1e/c8a25d?text=No+Image'">
+                     onclick="showProductDetails(${product.id})">
             </div>
             <div class="product-info">
                 <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
-                <h3 class="product-name" onclick="showProductDetails(${product.id})">${product.name}</h3>
-                <div class="product-price">
-                    <span class="current-price">${product.price} $</span>
-                    ${product.oldPrice ? `<span class="old-price">${product.oldPrice} $</span>` : ''}
+                <div class="product-name-price">
+                    <h3 class="product-name" onclick="showProductDetails(${product.id})">${product.name}</h3>
+                    <div class="product-price">
+                        <span class="current-price">${product.price}$</span>
+                        ${product.oldPrice ? `<span class="old-price">${product.oldPrice}$</span>` : ''}
+                    </div>
                 </div>
                 <div class="product-actions">
-                    <button class="add-to-cart-btn" onclick="addToCart(${product.id})">🛒 أضف للسلة</button>
+                    <button class="add-to-cart-btn" onclick="addToCart(${product.id}, this)">🛒 أضف للسلة</button>
                     <button class="view-btn" onclick="showProductDetails(${product.id})">👁️</button>
                 </div>
             </div>
@@ -156,14 +137,14 @@ function showProductDetails(productId) {
     const details = document.getElementById('productDetails');
 
     details.innerHTML = `
-        <img src="${product.image}" alt="${product.name}" class="product-detail-image" onerror="this.src='https://via.placeholder.com/400x400/1c1c1e/c8a25d?text=No+Image'">
+        <img src="${product.image}" alt="${product.name}" class="product-detail-image">
         <div class="product-detail-info">
             <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
             <h2>${product.name}</h2>
-            <div class="price">${product.price} $ ${product.oldPrice ? `<span class="old-price" style="font-size:1.2rem;margin-right:10px;">${product.oldPrice} $</span>` : ''}</div>
+            <div class="price">${product.price}$ ${product.oldPrice ? `<span class="old-price" style="font-size:1.2rem;margin-right:10px;">${product.oldPrice}$</span>` : ''}</div>
             <p class="description">${product.description || ''}</p>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                <button class="btn btn-primary" onclick="addToCart(${product.id});closeProductModal();" style="flex:1;">🛒 أضف للسلة</button>
+                <button class="btn btn-primary" onclick="addToCart(${product.id}, this);closeProductModal();" style="flex:1;">🛒 أضف للسلة</button>
                 <button class="btn btn-outline" onclick="orderViaWhatsApp(${product.id})" style="flex:1;">💬 اطلب عبر واتساب</button>
             </div>
         </div>
@@ -175,7 +156,7 @@ function closeProductModal() {
     document.getElementById('productModal').classList.remove('active');
 }
 
-function addToCart(productId) {
+function addToCart(productId, btnElement) {
     const product = allProducts.find(p => p.id === productId);
     if (!product) return;
     const existingItem = cart.find(item => item.id === productId);
@@ -183,6 +164,23 @@ function addToCart(productId) {
     else cart.push({ id: product.id, name: product.name, price: product.price, image: product.image, quantity: 1 });
     saveCart();
     updateCartUI();
+    
+    // تحسين تجربة الإضافة
+    if (btnElement) {
+        const originalText = btnElement.innerHTML;
+        btnElement.innerHTML = '✓ تمت الإضافة';
+        btnElement.classList.add('added');
+        setTimeout(() => {
+            btnElement.innerHTML = originalText;
+            btnElement.classList.remove('added');
+        }, 1500);
+    }
+    
+    // Animation على زر السلة
+    const cartBtn = document.getElementById('cartBtn');
+    cartBtn.classList.add('pulse');
+    setTimeout(() => cartBtn.classList.remove('pulse'), 400);
+    
     showNotification('تمت إضافة المنتج للسلة ✓');
 }
 
@@ -220,10 +218,10 @@ function renderCartItems() {
     }
     container.innerHTML = cart.map(item => `
         <div class="cart-item">
-            <img src="${item.image}" alt="${item.name}" loading="lazy" onerror="this.src='https://via.placeholder.com/60x60/1c1c1e/c8a25d?text=No+Image'">
+            <img src="${item.image}" alt="${item.name}" loading="lazy">
             <div class="cart-item-info">
                 <div class="cart-item-name">${item.name}</div>
-                <div class="cart-item-price">${item.price} $</div>
+                <div class="cart-item-price">${item.price}$</div>
             </div>
             <div class="cart-item-qty">
                 <button class="qty-btn" onclick="updateQuantity(${item.id}, -1)">-</button>
@@ -235,7 +233,7 @@ function renderCartItems() {
     `).join('');
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const totalEl = document.getElementById('totalPrice');
-    if (totalEl) totalEl.textContent = total.toFixed(2) + ' $';
+    if (totalEl) totalEl.textContent = total.toFixed(2) + '$';
     if (footer) footer.style.display = 'block';
 }
 
@@ -253,7 +251,7 @@ function orderViaWhatsApp(productId) {
     if (!product) return;
     const wa = storeData.storeInfo ? storeData.storeInfo.whatsapp : '963900000000';
     const storeName = storeData.storeInfo ? storeData.storeInfo.name : 'Champions Store';
-    const message = `مرحباً ${storeName} \n\nأريد طلب المنتج:\n ${product.name}\n💰 السعر: ${product.price}$\n\nشكراً لكم!`;
+    const message = `مرحباً ${storeName} 👋\n\nأريد طلب المنتج:\n📦 ${product.name}\n💰 السعر: ${product.price}$\n\nشكراً لكم!`;
     window.open(`https://wa.me/${wa}?text=${encodeURIComponent(message)}`, '_blank');
 }
 
@@ -268,7 +266,7 @@ function checkoutViaWhatsApp() {
         total += itemTotal;
         message += `${index + 1}. 📦 ${item.name}\n   الكمية: ${item.quantity} | السعر: ${itemTotal}$\n\n`;
     });
-    message += `━━━━━━━━━━━━━━\n💰 المجموع الكلي: ${total.toFixed(2)} $\n\n العنوان: \n📱 رقم الهاتف: \n\nشكراً لكم!`;
+    message += `━━━━━━━━━━━━━━\n💰 المجموع الكلي: ${total.toFixed(2)}$\n\n📍 العنوان: \n📱 رقم الهاتف: \n\nشكراً لكم!`;
     window.open(`https://wa.me/${wa}?text=${encodeURIComponent(message)}`, '_blank');
 }
 
