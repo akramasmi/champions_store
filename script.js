@@ -80,8 +80,7 @@ function renderBatch(isReset = false) {
             ${product.badge ? `<span class="product-badge ${badgeClass}">${product.badge}</span>` : ''}
             <div class="product-image-wrapper">
 <img src="${product.image}" alt="${product.name}" class="product-image" 
-     loading="lazy" decoding="async" fetchpriority="low"
-     sizes="(max-width: 768px) 50vw, 33vw"
+     loading="lazy" decoding="async"
      onclick="showProductDetails(${product.id})">
             </div>
             <div class="product-info">
