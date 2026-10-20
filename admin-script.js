@@ -42,9 +42,8 @@ async function loadData() {
     }
 }
 
-// ===== إعادة تحميل البيانات من GitHub (لاستعادة المحذوفات) =====
 async function reloadFromServer() {
-    if (!confirm('⚠️ سيتم تجاهل كل التعديلات المحلية وإعادة تحميل البيانات الأصلية من GitHub. هل أنت متأكد؟')) return;
+    if (!confirm('⚠️ سيتم تجاهل كل التعديلات المحلية وإعادة تحميل البيانات من GitHub. هل أنت متأكد؟')) return;
     
     try {
         localStorage.removeItem(STORAGE_KEY);
@@ -91,7 +90,7 @@ function renderProducts() {
     storeData.products.forEach(p => {
         const cat = categories.find(c => c.id === p.category);
         html += `<div class="product-row">
-            <img src="${p.image}" alt="${p.name}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;" onerror="this.src='https://via.placeholder.com/60x60/1a1a1a/d4af37?text=No+Image'">
+            <img src="${p.image}" alt="${p.name}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">
             <div><strong>${p.name}</strong>${p.badge ? '<br><small style="color:var(--gold-dark)">' + p.badge + '</small>' : ''}</div>
             <div>${p.price} $</div>
             <div>${cat ? cat.name : p.category}</div>
@@ -159,7 +158,7 @@ function deleteProduct(id) {
     storeData.products = storeData.products.filter(p => p.id !== id);
     saveToLocalStorage();
     renderProducts();
-    showToast('تم الحذف ✓ (اضغط "نشر فوري" لتطبيقه على الموقع)');
+    showToast('تم الحذف ✓ (اضغط "نشر فوري" لتطبيقه)');
 }
 
 function handleImageUpload(event) {
@@ -193,7 +192,7 @@ function saveProduct() {
     if (preview.style.display !== 'none' && preview.src && !preview.src.includes(window.location.href)) {
         image = preview.src;
     }
-    if (!image) image = 'https://via.placeholder.com/400x400/1a1a1a/d4af37?text=No+Image';
+    if (!image) image = 'https://via.placeholder.com/400x400/1c1c1e/c8a25d?text=No+Image';
     
     if (editingProductId) {
         const p = storeData.products.find(x => x.id === editingProductId);
@@ -276,14 +275,14 @@ function saveStoreInfo() {
     showToast('تم الحفظ ✓ (لا تنسَ الضغط على "نشر فوري")');
 }
 
-// ===== من نحن (جديد) =====
+// ===== من نحن =====
 function renderAboutInfo() {
     if (!storeData) return;
     if (!storeData.about) {
         storeData.about = {
             title: 'Champions Store Supplements',
-            description: 'متجر متخصص بجميع المكملات الغذائية للرياضيين. نوفر لكم أفضل الماركات العالمية بأسعار منافسة مع ضمان الأصالة 100%.',
-            features: '🏆 منتجات أوريجنال مكفولة\n📍 مقرنا في دمشق\n🚚 شحن لجميع المحافظات السورية\n💬 دعم فني عبر واتساب'
+            description: 'متجر متخصص بجميع المكملات الغذائية للرياضيين.',
+            features: '🏆 منتجات أوريجنال مكفولة\n📍 مقرنا في دمشق\n🚚 شحن لجميع المحافظات\n💬 دعم عبر واتساب'
         };
     }
     document.getElementById('aboutTitle').value = storeData.about.title || '';
@@ -297,7 +296,7 @@ function saveAboutInfo() {
     storeData.about.description = document.getElementById('aboutDescription').value.trim();
     storeData.about.features = document.getElementById('aboutFeatures').value.trim();
     saveToLocalStorage();
-    showToast('تم حفظ "من نحن" ✓ (لا تنسَ الضغط على "نشر فوري")');
+    showToast('تم حفظ "من نحن" ✓');
 }
 
 // ===== اللوغو =====
@@ -355,7 +354,7 @@ function changePassword() {
     showToast('تم تغيير كلمة المرور ✓');
 }
 
-// ===== تصدير واستيراد JSON =====
+// ===== تصدير واستيراد =====
 function exportData() {
     if (!storeData) return showToast('لا توجد بيانات', 'error');
     const dataStr = JSON.stringify(storeData, null, 2);
@@ -472,6 +471,209 @@ async function publishDirectly() {
     }
 }
 
+// ===== تحويل الصور إلى WebP =====
+function showConvertModal() {
+    const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
+    if (!config || !config.token) {
+        showToast('يرجى إعداد GitHub أولاً', 'error');
+        return;
+    }
+    
+    if (!storeData || !storeData.products) {
+        showToast('لا توجد منتجات', 'error');
+        return;
+    }
+    
+    // ملء قائمة الفئات
+    const categorySelect = document.getElementById('convertCategory');
+    categorySelect.innerHTML = '<option value="all">جميع الفئات</option>';
+    storeData.categories.forEach(cat => {
+        if (cat.id !== 'all') {
+            categorySelect.innerHTML += `<option value="${cat.id}">${cat.icon} ${cat.name}</option>`;
+        }
+    });
+    
+    // حساب الإحصائيات
+    const base64Count = storeData.products.filter(p => p.image && p.image.startsWith('data:image')).length;
+    const externalCount = storeData.products.length - base64Count;
+    
+    document.getElementById('base64Count').textContent = `صور Base64: ${base64Count}`;
+    document.getElementById('externalCount').textContent = `صور خارجية: ${externalCount}`;
+    
+    document.getElementById('convertModal').classList.add('active');
+}
+
+function closeConvertModal() {
+    document.getElementById('convertModal').classList.remove('active');
+}
+
+async function convertAllImagesToWebP() {
+    const category = document.getElementById('convertCategory').value;
+    const deleteOld = document.getElementById('deleteOldImages').checked;
+    const maxSizeKB = parseInt(document.getElementById('maxImageSize').value) || 150;
+    
+    // فلترة المنتجات حسب الفئة
+    let productsToConvert = storeData.products;
+    if (category !== 'all') {
+        productsToConvert = productsToConvert.filter(p => p.category === category);
+    }
+    
+    // فلترة صور Base64 فقط
+    const base64Products = productsToConvert.filter(p => p.image && p.image.startsWith('data:image'));
+    
+    if (base64Products.length === 0) {
+        showToast('لا توجد صور Base64 للتحويل في هذه الفئة', 'error');
+        return;
+    }
+    
+    if (!confirm(`⚠️ سيتم تحويل ${base64Products.length} صورة إلى WebP.\n\nهل أنت متأكد؟`)) {
+        return;
+    }
+    
+    closeConvertModal();
+    
+    // إنشاء شريط التقدم
+    const progressContainer = document.createElement('div');
+    progressContainer.className = 'progress-container active';
+    progressContainer.innerHTML = `
+        <div class="progress-title">🖼️ جاري تحويل الصور إلى WebP</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">بدء العملية...</div>
+        <div class="progress-stats">
+            <span id="progressCount">0 / ${base64Products.length}</span>
+            <span id="progressSize">0 MB توفير</span>
+        </div>
+    `;
+    document.body.appendChild(progressContainer);
+    
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const progressCount = document.getElementById('progressCount');
+    const progressSize = document.getElementById('progressSize');
+    
+    let totalSizeSaved = 0;
+    let convertedCount = 0;
+    
+    try {
+        const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY));
+        const baseUrl = `https://api.github.com/repos/${config.username}/${config.repo}`;
+        const headers = {
+            'Authorization': `token ${config.token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+        };
+        
+        for (let i = 0; i < base64Products.length; i++) {
+            const product = base64Products[i];
+            const progress = ((i + 1) / base64Products.length) * 100;
+            
+            progressFill.style.width = `${progress}%`;
+            progressText.textContent = `تحويل: ${product.name}`;
+            progressCount.textContent = `${i + 1} / ${base64Products.length}`;
+            
+            try {
+                // تحويل Base64 إلى Blob
+                const blob = await base64ToBlob(product.image);
+                const originalSize = blob.size;
+                
+                // ضغط وتحويل إلى WebP
+                const options = {
+                    maxSizeMB: maxSizeKB / 1024,
+                    maxWidthOrHeight: 800,
+                    useWebWorker: true,
+                    fileType: 'image/webp'
+                };
+                
+                const compressedFile = await imageCompression(blob, options);
+                const compressedSize = compressedFile.size;
+                
+                // إنشاء اسم ملف
+                const fileName = `product-${product.id}-${Date.now()}.webp`;
+                
+                // تحويل إلى Base64 للرفع
+                const reader = new FileReader();
+                const webpBase64 = await new Promise((resolve, reject) => {
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(compressedFile);
+                });
+                
+                // رفع إلى GitHub
+                const uploadResponse = await fetch(`${baseUrl}/contents/imgs/${fileName}`, {
+                    method: 'PUT',
+                    headers,
+                    body: JSON.stringify({
+                        message: `🖼️ رفع صورة ${product.name}`,
+                        content: webpBase64,
+                        branch: 'main'
+                    })
+                });
+                
+                if (!uploadResponse.ok) {
+                    throw new Error('فشل رفع الصورة');
+                }
+                
+                // تحديث رابط الصورة
+                const imageUrl = `https://raw.githubusercontent.com/${config.username}/${config.repo}/main/imgs/${fileName}`;
+                product.image = imageUrl;
+                
+                totalSizeSaved += (originalSize - compressedSize);
+                convertedCount++;
+                
+                progressSize.textContent = `${(totalSizeSaved / 1024 / 1024).toFixed(2)} MB توفير`;
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+            } catch (error) {
+                console.error(`خطأ في تحويل ${product.name}:`, error);
+                progressText.textContent = `خطأ في: ${product.name} - المتابعة...`;
+            }
+        }
+        
+        // حذف الصور القديمة من JSON إذا تم تفعيل الخيار
+        if (deleteOld) {
+            progressText.textContent = 'حذف الصور القديمة من JSON...';
+            storeData.products.forEach(p => {
+                if (p.image && p.image.startsWith('data:image')) {
+                    p.image = 'https://via.placeholder.com/400x400/1c1c1e/c8a25d?text=No+Image';
+                }
+            });
+        }
+        
+        saveToLocalStorage();
+        
+        progressText.textContent = 'جاري نشر التحديثات...';
+        await publishDirectly();
+        
+        progressContainer.innerHTML = `
+            <div class="progress-title">✅ تم بنجاح!</div>
+            <div class="progress-text">
+                تم تحويل ${convertedCount} صورة بنجاح<br>
+                <strong style="color: var(--success);">توفير: ${(totalSizeSaved / 1024 / 1024).toFixed(2)} MB</strong>
+            </div>
+            <button class="btn-save" onclick="this.parentElement.remove()" style="margin-top: 20px; width: 100%;">حسناً</button>
+        `;
+        
+        showToast(`✅ تم تحويل ${convertedCount} صورة بنجاح!`);
+        
+    } catch (error) {
+        console.error('خطأ في التحويل:', error);
+        progressContainer.innerHTML = `
+            <div class="progress-title">❌ حدث خطأ</div>
+            <div class="progress-text" style="color: var(--danger);">${error.message}</div>
+            <button class="btn-save" onclick="this.parentElement.remove()" style="margin-top: 20px; width: 100%;">حسناً</button>
+        `;
+        showToast('❌ خطأ: ' + error.message, 'error');
+    }
+}
+
+async function base64ToBlob(base64String) {
+    const response = await fetch(base64String);
+    return await response.blob();
+}
+
 // ===== الإشعارات =====
 function showToast(msg, type = 'success') {
     const t = document.getElementById('toast');
@@ -488,75 +690,11 @@ document.addEventListener('click', (e) => {
         setTimeout(loadGitHubConfig, 100);
     }
 });
-// ===== ضغط الصور تلقائياً =====
-function compressImage(file, maxWidth = 800, quality = 0.7) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                
-                // تصغير الأبعاد إذا كانت أكبر من maxWidth
-                if (width > maxWidth) {
-                    height = (height * maxWidth) / width;
-                    width = maxWidth;
-                }
-                
-                canvas.width = width;
-                canvas.height = height;
-                
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                // تحويل لـ JPEG مضغوط
-                const compressed = canvas.toDataURL('image/jpeg', quality);
-                resolve(compressed);
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-// ===== تعديل دالة handleImageUpload لضغط الصور =====
-async function handleImageUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    showToast('جاري ضغط الصورة...', 'info');
-    
-    try {
-        const compressed = await compressImage(file, 800, 0.7);
-        const preview = document.getElementById('imagePreview');
-        preview.src = compressed;
-        preview.style.display = 'block';
-        document.getElementById('productImageUrl').value = '';
-        showToast('✅ تم ضغط الصورة بنجاح');
-    } catch (error) {
-        showToast('❌ خطأ في ضغط الصورة', 'error');
-    }
-}
-
-// ===== تعديل دالة handleLogoUpload لضغط اللوغو =====
-async function handleLogoUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    showToast('جاري ضغط اللوغو...', 'info');
-    
-    try {
-        const compressed = await compressImage(file, 400, 0.8);
-        document.getElementById('logoPreview').src = compressed;
-        document.getElementById('logoUrl').value = '';
-        showToast('✅ تم ضغط اللوغو بنجاح');
-    } catch (error) {
-        showToast('❌ خطأ في ضغط اللوغو', 'error');
-    }
-}
 
 document.getElementById('productModal').addEventListener('click', (e) => {
     if (e.target.id === 'productModal') closeProductModal();
+});
+
+document.getElementById('convertModal').addEventListener('click', (e) => {
+    if (e.target.id === 'convertModal') closeConvertModal();
 });
