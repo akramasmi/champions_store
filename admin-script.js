@@ -18,7 +18,10 @@ function checkPassword() {
         document.getElementById('errorMsg').textContent = 'كلمة المرور غير صحيحة';
     }
 }
-document.getElementById('passwordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPassword(); });
+
+document.getElementById('passwordInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') checkPassword();
+});
 
 function logout() {
     document.getElementById('adminPanel').style.display = 'none';
@@ -129,27 +132,40 @@ function renderCategorySelect() {
     select.innerHTML = categories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
 }
 
+// ✅ إصلاح مشكلة التعديل
 function editProduct(id) {
     const p = storeData.products.find(x => x.id === id);
-    if (!p) return;
+    if (!p) {
+        showToast('المنتج غير موجود', 'error');
+        return;
+    }
+    
     editingProductId = id;
     document.getElementById('modalTitle').textContent = 'تعديل منتج';
+    
+    // ملء الحقول بالترتيب الصحيح
     document.getElementById('productName').value = p.name;
     document.getElementById('productPrice').value = p.price;
     document.getElementById('productOldPrice').value = p.oldPrice || '';
     document.getElementById('productDescription').value = p.description || '';
     document.getElementById('productBadge').value = p.badge || '';
+    
+    // إنشاء قائمة الفئات أولاً
     renderCategorySelect();
+    
+    // ثم تعيين القيمة المحددة
     document.getElementById('productCategory').value = p.category;
     
-    if (p.image.startsWith('data:')) {
+    // معالجة الصورة
+    if (p.image && p.image.startsWith('data:')) {
         document.getElementById('imagePreview').src = p.image;
         document.getElementById('imagePreview').style.display = 'block';
         document.getElementById('productImageUrl').value = '';
     } else {
-        document.getElementById('productImageUrl').value = p.image;
+        document.getElementById('productImageUrl').value = p.image || '';
         document.getElementById('imagePreview').style.display = 'none';
     }
+    
     document.getElementById('productModal').classList.add('active');
 }
 
@@ -197,12 +213,26 @@ function saveProduct() {
     if (editingProductId) {
         const p = storeData.products.find(x => x.id === editingProductId);
         if (p) {
-            p.name = name; p.category = category; p.price = price;
-            p.oldPrice = oldPrice; p.description = description; p.badge = badge; p.image = image;
+            p.name = name;
+            p.category = category;
+            p.price = price;
+            p.oldPrice = oldPrice;
+            p.description = description;
+            p.badge = badge;
+            p.image = image;
         }
     } else {
         const newId = storeData.products.length > 0 ? Math.max(...storeData.products.map(p => p.id)) + 1 : 1;
-        storeData.products.push({ id: newId, name, category, price, oldPrice, description, badge, image });
+        storeData.products.push({
+            id: newId,
+            name,
+            category,
+            price,
+            oldPrice,
+            description,
+            badge,
+            image
+        });
     }
     
     saveToLocalStorage();
@@ -471,7 +501,7 @@ async function publishDirectly() {
     }
 }
 
-// ===== تحويل الصور إلى WebP =====
+// ===== تحويل الصور =====
 function showConvertModal() {
     const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
     if (!config || !config.token) {
@@ -484,7 +514,6 @@ function showConvertModal() {
         return;
     }
     
-    // ملء قائمة الفئات
     const categorySelect = document.getElementById('convertCategory');
     categorySelect.innerHTML = '<option value="all">جميع الفئات</option>';
     storeData.categories.forEach(cat => {
@@ -493,7 +522,6 @@ function showConvertModal() {
         }
     });
     
-    // حساب الإحصائيات
     const base64Count = storeData.products.filter(p => p.image && p.image.startsWith('data:image')).length;
     const externalCount = storeData.products.length - base64Count;
     
@@ -512,13 +540,11 @@ async function convertAllImagesToWebP() {
     const deleteOld = document.getElementById('deleteOldImages').checked;
     const maxSizeKB = parseInt(document.getElementById('maxImageSize').value) || 150;
     
-    // فلترة المنتجات حسب الفئة
     let productsToConvert = storeData.products;
     if (category !== 'all') {
         productsToConvert = productsToConvert.filter(p => p.category === category);
     }
     
-    // فلترة صور Base64 فقط
     const base64Products = productsToConvert.filter(p => p.image && p.image.startsWith('data:image'));
     
     if (base64Products.length === 0) {
@@ -532,7 +558,6 @@ async function convertAllImagesToWebP() {
     
     closeConvertModal();
     
-    // إنشاء شريط التقدم
     const progressContainer = document.createElement('div');
     progressContainer.className = 'progress-container active';
     progressContainer.innerHTML = `
@@ -574,11 +599,9 @@ async function convertAllImagesToWebP() {
             progressCount.textContent = `${i + 1} / ${base64Products.length}`;
             
             try {
-                // تحويل Base64 إلى Blob
                 const blob = await base64ToBlob(product.image);
                 const originalSize = blob.size;
                 
-                // ضغط وتحويل إلى WebP
                 const options = {
                     maxSizeMB: maxSizeKB / 1024,
                     maxWidthOrHeight: 800,
@@ -589,10 +612,8 @@ async function convertAllImagesToWebP() {
                 const compressedFile = await imageCompression(blob, options);
                 const compressedSize = compressedFile.size;
                 
-                // إنشاء اسم ملف
                 const fileName = `product-${product.id}-${Date.now()}.webp`;
                 
-                // تحويل إلى Base64 للرفع
                 const reader = new FileReader();
                 const webpBase64 = await new Promise((resolve, reject) => {
                     reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -600,7 +621,6 @@ async function convertAllImagesToWebP() {
                     reader.readAsDataURL(compressedFile);
                 });
                 
-                // رفع إلى GitHub
                 const uploadResponse = await fetch(`${baseUrl}/contents/imgs/${fileName}`, {
                     method: 'PUT',
                     headers,
@@ -615,7 +635,6 @@ async function convertAllImagesToWebP() {
                     throw new Error('فشل رفع الصورة');
                 }
                 
-                // تحديث رابط الصورة
                 const imageUrl = `https://raw.githubusercontent.com/${config.username}/${config.repo}/main/imgs/${fileName}`;
                 product.image = imageUrl;
                 
@@ -632,7 +651,6 @@ async function convertAllImagesToWebP() {
             }
         }
         
-        // حذف الصور القديمة من JSON إذا تم تفعيل الخيار
         if (deleteOld) {
             progressText.textContent = 'حذف الصور القديمة من JSON...';
             storeData.products.forEach(p => {
@@ -684,7 +702,7 @@ function showToast(msg, type = 'success') {
     setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// تحميل إعدادات GitHub عند فتح التبويب
+// ===== مستمعي الأحداث =====
 document.addEventListener('click', (e) => {
     if (e.target.dataset && e.target.dataset.tab === 'github') {
         setTimeout(loadGitHubConfig, 100);
