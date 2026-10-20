@@ -1120,3 +1120,27 @@ h1, h2, h3, h4 {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+/* ===== تحسين أداء الصور والتمرير بشكل جذري ===== */
+.product-card {
+    /* يمنع إعادة حساب الصفحة عند تغيير البطاقة */
+    contain: layout style paint;
+    /* يتجاهل رسم البطاقة تماماً حتى تقترب من الشاشة (تسريع هائل) */
+    content-visibility: auto;
+    /* يحجز مساحة تقريبية للبطاقة لمنع اهتزاز شريط التمرير */
+    contain-intrinsic-size: 450px; 
+    will-change: transform;
+}
+
+.product-image-wrapper {
+    /* يحجز المكان مسبقاً لمنع اهتزاز الصفحة أثناء تحميل الصورة */
+    aspect-ratio: 4/5;
+    background-color: rgba(200, 162, 93, 0.05); /* لون خلفية مؤقت أثناء التحميل */
+}
+
+.product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* تحسين أداء عرض الصورة */
+    transform: translateZ(0); 
+}
