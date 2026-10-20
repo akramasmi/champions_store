@@ -79,8 +79,10 @@ function renderBatch(isReset = false) {
         return `<div class="product-card">
             ${product.badge ? `<span class="product-badge ${badgeClass}">${product.badge}</span>` : ''}
             <div class="product-image-wrapper">
-                <img src="${product.image}" alt="${product.name}" class="product-image" loading="lazy"
-                     onclick="showProductDetails(${product.id})">
+<img src="${product.image}" alt="${product.name}" class="product-image" 
+     loading="lazy" decoding="async" fetchpriority="low"
+     sizes="(max-width: 768px) 50vw, 33vw"
+     onclick="showProductDetails(${product.id})">
             </div>
             <div class="product-info">
                 <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
