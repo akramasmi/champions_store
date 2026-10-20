@@ -83,27 +83,49 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
-// ===== المنتجات =====
+// ✅ الحل الجذري: استخدام data-id بدلاً من onclick مع Base64
 function renderProducts() {
     const container = document.getElementById('productsTable');
     if (!container || !storeData || !storeData.products) return;
     const categories = storeData.categories.filter(c => c.id !== 'all');
     
     let html = '<div class="product-row header"><div>صورة</div><div>الاسم</div><div>السعر</div><div>الفئة</div><div>إجراءات</div></div>';
+    
     storeData.products.forEach(p => {
         const cat = categories.find(c => c.id === p.category);
-        html += `<div class="product-row">
-            <img src="${p.image}" alt="${p.name}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">
+        // استخدام صورة placeholder بدلاً من Base64 في الجدول
+        const displayImage = p.image && p.image.startsWith('data:') 
+            ? 'https://via.placeholder.com/60x60/1c1c1e/c8a25d?text=IMG' 
+            : p.image;
+        
+        html += `<div class="product-row" data-product-id="${p.id}">
+            <img src="${displayImage}" alt="${p.name}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">
             <div><strong>${p.name}</strong>${p.badge ? '<br><small style="color:var(--gold-dark)">' + p.badge + '</small>' : ''}</div>
             <div>${p.price} $</div>
             <div>${cat ? cat.name : p.category}</div>
             <div class="product-actions">
-                <button class="btn-edit" onclick="editProduct(${p.id})">✏️</button>
-                <button class="btn-delete" onclick="deleteProduct(${p.id})">🗑️</button>
+                <button class="btn-edit" data-action="edit" data-id="${p.id}">✏️</button>
+                <button class="btn-delete" data-action="delete" data-id="${p.id}">🗑️</button>
             </div>
         </div>`;
     });
+    
     container.innerHTML = html;
+    
+    // إضافة event listeners للأزرار
+    container.querySelectorAll('[data-action="edit"]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = parseInt(e.currentTarget.dataset.id);
+            editProduct(id);
+        });
+    });
+    
+    container.querySelectorAll('[data-action="delete"]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = parseInt(e.currentTarget.dataset.id);
+            deleteProduct(id);
+        });
+    });
 }
 
 function openProductModal() {
@@ -132,7 +154,6 @@ function renderCategorySelect() {
     select.innerHTML = categories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
 }
 
-// ✅ إصلاح مشكلة التعديل
 function editProduct(id) {
     const p = storeData.products.find(x => x.id === id);
     if (!p) {
@@ -143,17 +164,17 @@ function editProduct(id) {
     editingProductId = id;
     document.getElementById('modalTitle').textContent = 'تعديل منتج';
     
-    // ملء الحقول بالترتيب الصحيح
+    // ملء الحقول
     document.getElementById('productName').value = p.name;
     document.getElementById('productPrice').value = p.price;
     document.getElementById('productOldPrice').value = p.oldPrice || '';
     document.getElementById('productDescription').value = p.description || '';
     document.getElementById('productBadge').value = p.badge || '';
     
-    // إنشاء قائمة الفئات أولاً
+    // إنشاء قائمة الفئات
     renderCategorySelect();
     
-    // ثم تعيين القيمة المحددة
+    // تعيين الفئة المحددة
     document.getElementById('productCategory').value = p.category;
     
     // معالجة الصورة
@@ -251,11 +272,19 @@ function renderCategoriesAdmin() {
         if (cat.id === 'all') return;
         html += `<li style="display:flex;justify-content:space-between;padding:10px;background:#f4f4f4;margin-bottom:5px;border-radius:5px;">
             <span>${cat.icon} ${cat.name} (ID: ${cat.id})</span>
-            <button class="btn-delete" onclick="deleteCategory('${cat.id}')" style="padding:5px 10px;">حذف</button>
+            <button class="btn-delete" data-action="delete-cat" data-id="${cat.id}" style="padding:5px 10px;">حذف</button>
         </li>`;
     });
     html += '</ul>';
     list.innerHTML = html;
+    
+    // إضافة event listeners
+    list.querySelectorAll('[data-action="delete-cat"]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = e.currentTarget.dataset.id;
+            deleteCategory(id);
+        });
+    });
 }
 
 function addCategory() {
