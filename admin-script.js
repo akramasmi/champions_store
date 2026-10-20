@@ -488,6 +488,74 @@ document.addEventListener('click', (e) => {
         setTimeout(loadGitHubConfig, 100);
     }
 });
+// ===== ضغط الصور تلقائياً =====
+function compressImage(file, maxWidth = 800, quality = 0.7) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                
+                // تصغير الأبعاد إذا كانت أكبر من maxWidth
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // تحويل لـ JPEG مضغوط
+                const compressed = canvas.toDataURL('image/jpeg', quality);
+                resolve(compressed);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+// ===== تعديل دالة handleImageUpload لضغط الصور =====
+async function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    showToast('جاري ضغط الصورة...', 'info');
+    
+    try {
+        const compressed = await compressImage(file, 800, 0.7);
+        const preview = document.getElementById('imagePreview');
+        preview.src = compressed;
+        preview.style.display = 'block';
+        document.getElementById('productImageUrl').value = '';
+        showToast('✅ تم ضغط الصورة بنجاح');
+    } catch (error) {
+        showToast('❌ خطأ في ضغط الصورة', 'error');
+    }
+}
+
+// ===== تعديل دالة handleLogoUpload لضغط اللوغو =====
+async function handleLogoUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    showToast('جاري ضغط اللوغو...', 'info');
+    
+    try {
+        const compressed = await compressImage(file, 400, 0.8);
+        document.getElementById('logoPreview').src = compressed;
+        document.getElementById('logoUrl').value = '';
+        showToast('✅ تم ضغط اللوغو بنجاح');
+    } catch (error) {
+        showToast('❌ خطأ في ضغط اللوغو', 'error');
+    }
+}
 
 document.getElementById('productModal').addEventListener('click', (e) => {
     if (e.target.id === 'productModal') closeProductModal();
