@@ -21,19 +21,26 @@ async function init() {
         const response = await fetch('products.json?v=' + Date.now());
         if (!response.ok) throw new Error('فشل في تحميل المنتجات');
         storeData = await response.json();
-        allProducts = storeData.products || [];
-        filteredProducts = [...allProducts];
         
+        // ===== المرحلة 1: معلومات المتجر والفئات فوراً =====
+        console.log('📋 المرحلة 1: عرض معلومات المتجر والفئات...');
         updateSiteContent();
         renderCategories();
         
-        // عرض الدفعة الأولى فوراً (أقل من ثانية)
+        // ===== المرحلة 2: تقسيم المنتجات وعرضها تدريجياً =====
+        console.log('📦 المرحلة 2: تقسيم المنتجات وعرضها تدريجياً...');
+        allProducts = storeData.products || [];
+        filteredProducts = [...allProducts];
+        
+        // عرض الدفعة الأولى فوراً
         currentChunk = 0;
         renderChunk();
         
         updateCartUI();
         setupEventListeners();
         setupLazyLoading(); // تفعيل التحميل الكسول
+        
+        console.log(`✅ تم التحميل: ${allProducts.length} منتج مقسمة إلى ${Math.ceil(allProducts.length / CHUNK_SIZE)} دفعة`);
         
     } catch (error) {
         console.error('خطأ:', error);
