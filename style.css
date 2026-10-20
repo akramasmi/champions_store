@@ -505,13 +505,22 @@ h1, h2, h3, h4 {
     color: white;
 }
 
+/* ===== إصلاح انزياح الصورة ===== */
 .product-image-wrapper {
     position: relative;
     overflow: hidden;
     aspect-ratio: 3/4;
     background: rgba(0, 0, 0, 0.2);
-    min-height: 280px;
-    max-height: 320px;
+    width: 100%;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
 }
 
 .product-image {
@@ -519,6 +528,8 @@ h1, h2, h3, h4 {
     height: 100%;
     -o-object-fit: cover;
     object-fit: cover;
+    object-position: center center;
+    display: block;
     -webkit-transition: transform 0.4s ease;
     transition: transform 0.4s ease;
 }
@@ -1175,6 +1186,16 @@ h1, h2, h3, h4 {
         aspect-ratio: 3/4;
         min-height: 180px;
         max-height: 220px;
+        width: 100%;
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        -webkit-box-pack: center;
+        -ms-flex-pack: center;
+        justify-content: center;
+        -webkit-box-align: center;
+        -ms-flex-align: center;
+        align-items: center;
     }
     
     .product-name-price {
