@@ -1,163 +1,29 @@
 const STORAGE_KEY = 'championsStoreData';
 let storeData = null;
 let allProducts = [];
-let filteredProducts = [];
 let currentCategory = 'all';
 let searchQuery = '';
 let cart = JSON.parse(localStorage.getItem('championsCart')) || [];
 
-// ===== إعدادات التقسيم الداخلي =====
-const CHUNK_SIZE = 12; // عدد المنتجات في كل دفعة
-let currentChunk = 0; // الدفعة الحالية
-let isRendering = false; // منع التكرار
-
-// ===== بدء التطبيق =====
 async function init() {
     try {
-        // عرض رسالة تحميل سريعة
-        const grid = document.getElementById('productGrid');
-        grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gold);">جاري تحميل المنتجات...</div>';
-        
         const response = await fetch('products.json?v=' + Date.now());
         if (!response.ok) throw new Error('فشل في تحميل المنتجات');
         storeData = await response.json();
         allProducts = storeData.products || [];
-        filteredProducts = [...allProducts];
         
         updateSiteContent();
         renderCategories();
-        
-        // عرض الدفعة الأولى فوراً (أقل من ثانية)
-        currentChunk = 0;
-        renderChunk();
-        
+        renderProducts();
         updateCartUI();
         setupEventListeners();
-        setupLazyLoading(); // تفعيل التحميل الكسول
-        
     } catch (error) {
         console.error('خطأ:', error);
         document.getElementById('productGrid').innerHTML = 
-            '<div style="text-align:center;padding:40px;color:red;"><h3>خطأ في تحميل المنتجات</h3><p>' + error.message + '</p></div>';
+            '<div style="text-align:center;padding:40px;color:red;"><h3>خطأ في تحميل المنتجات</h3></div>';
     }
 }
 
-// ===== تقسيم المصفوفة وعرض الدفعة الحالية =====
-function renderChunk() {
-    if (isRendering) return;
-    isRendering = true;
-    
-    const grid = document.getElementById('productGrid');
-    const noResults = document.getElementById('noResults');
-    
-    // إزالة رسالة التحميل
-    if (currentChunk === 0) {
-        grid.innerHTML = '';
-    }
-    
-    // حساب حدود الدفعة الحالية
-    const start = currentChunk * CHUNK_SIZE;
-    const end = start + CHUNK_SIZE;
-    const chunkProducts = filteredProducts.slice(start, end);
-    
-    // إذا لم تكن هناك منتجات
-    if (filteredProducts.length === 0) {
-        if (noResults) noResults.style.display = 'block';
-        isRendering = false;
-        return;
-    }
-    
-    if (noResults) noResults.style.display = 'none';
-    
-    // إذا انتهت جميع المنتجات
-    if (chunkProducts.length === 0) {
-        isRendering = false;
-        return;
-    }
-    
-    // بناء HTML للدفعة الحالية فقط
-    const html = chunkProducts.map(product => {
-        const category = storeData.categories.find(c => c.id === product.category);
-        const badgeClass = product.badge === 'خصم' ? 'sale' : '';
-        return `<div class="product-card">
-            ${product.badge ? `<span class="product-badge ${badgeClass}">${product.badge}</span>` : ''}
-            <div class="product-image-wrapper">
-                <img src="${product.image}" alt="${product.name}" class="product-image" 
-                     loading="lazy" decoding="async"
-                     onclick="showProductDetails(${product.id})">
-            </div>
-            <div class="product-info">
-                <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
-                <div class="product-name-price">
-                    <h3 class="product-name" onclick="showProductDetails(${product.id})">${product.name}</h3>
-                    <div class="product-price">
-                        <span class="current-price">${product.price}$</span>
-                        ${product.oldPrice ? `<span class="old-price">${product.oldPrice}$</span>` : ''}
-                    </div>
-                </div>
-                <div class="product-actions">
-                    <button class="add-to-cart-btn" onclick="addToCart(${product.id}, this)">🛒 أضف</button>
-                    <button class="view-btn" onclick="showProductDetails(${product.id})">👁️</button>
-                </div>
-            </div>
-        </div>`;
-    }).join('');
-    
-    // إضافة الدفعة الحالية للشبكة (بدون مسح الكل)
-    grid.insertAdjacentHTML('beforeend', html);
-    
-    currentChunk++;
-    isRendering = false;
-    
-    console.log(`✅ تم عرض الدفعة ${currentChunk}: ${chunkProducts.length} منتج (المجموع: ${Math.min(end, filteredProducts.length)}/${filteredProducts.length})`);
-}
-
-// ===== إعادة تعيين العرض (عند البحث أو التصفية) =====
-function resetAndRender() {
-    currentChunk = 0;
-    document.getElementById('productGrid').innerHTML = '';
-    renderChunk();
-}
-
-// ===== التحميل الكسول عند التمرير =====
-function setupLazyLoading() {
-    // إنشاء عنصر sentinel في نهاية الشبكة
-    const grid = document.getElementById('productGrid');
-    let sentinel = document.getElementById('scroll-sentinel');
-    
-    if (!sentinel) {
-        sentinel = document.createElement('div');
-        sentinel.id = 'scroll-sentinel';
-        sentinel.style.cssText = 'height:40px;width:100%;display:flex;justify-content:center;align-items:center;margin-top:20px;';
-        grid.appendChild(sentinel);
-    }
-    
-    // مراقب التقاطع
-    const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && !isRendering) {
-            // التحقق إذا كانت هناك منتجات أخرى
-            const totalDisplayed = currentChunk * CHUNK_SIZE;
-            if (totalDisplayed < filteredProducts.length) {
-                // استخدام requestIdleCallback لتأخير التحميل حتى يرتاح المتصفح
-                if ('requestIdleCallback' in window) {
-                    requestIdleCallback(() => renderChunk());
-                } else {
-                    setTimeout(() => renderChunk(), 100);
-                }
-            } else {
-                // جميع المنتجات تم عرضها
-                sentinel.innerHTML = '<p style="color:var(--text-secondary);font-size:0.9rem;padding:20px;">تم عرض جميع المنتجات ✓</p>';
-                observer.disconnect();
-            }
-        }
-    }, {
-        rootMargin: '400px' // بدء التحميل قبل الوصول بـ 400 بكسل
-    });
-    
-    observer.observe(sentinel);
-}
-
-// ===== تحديث المحتوى (نفس السابق) =====
 function updateSiteContent() {
     if (!storeData || !storeData.storeInfo) return;
     const info = storeData.storeInfo;
@@ -215,7 +81,64 @@ function renderCategories() {
     ).join('');
 }
 
-// ===== دوال المنتج والسلة (نفس السابق) =====
+// ===== عرض جميع المنتجات دفعة واحدة =====
+function renderProducts() {
+    const grid = document.getElementById('productGrid');
+    const noResults = document.getElementById('noResults');
+    if (!grid) return;
+
+    let filtered = allProducts;
+    
+    if (currentCategory !== 'all') {
+        filtered = filtered.filter(p => p.category === currentCategory);
+    }
+    
+    if (searchQuery) {
+        filtered = filtered.filter(p => 
+            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+    }
+
+    if (filtered.length === 0) {
+        grid.innerHTML = '';
+        if (noResults) noResults.style.display = 'block';
+        return;
+    }
+    
+    if (noResults) noResults.style.display = 'none';
+
+    // بناء HTML لجميع المنتجات
+    const html = filtered.map(product => {
+        const category = storeData.categories.find(c => c.id === product.category);
+        const badgeClass = product.badge === 'خصم' ? 'sale' : '';
+        return `<div class="product-card">
+            ${product.badge ? `<span class="product-badge ${badgeClass}">${product.badge}</span>` : ''}
+            <div class="product-image-wrapper">
+                <img src="${product.image}" alt="${product.name}" class="product-image" 
+                     loading="lazy" decoding="async"
+                     onclick="showProductDetails(${product.id})">
+            </div>
+            <div class="product-info">
+                <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
+                <div class="product-name-price">
+                    <h3 class="product-name" onclick="showProductDetails(${product.id})">${product.name}</h3>
+                    <div class="product-price">
+                        <span class="current-price">${product.price}$</span>
+                        ${product.oldPrice ? `<span class="old-price">${product.oldPrice}$</span>` : ''}
+                    </div>
+                </div>
+                <div class="product-actions">
+                    <button class="add-to-cart-btn" onclick="addToCart(${product.id}, this)">🛒 أضف</button>
+                    <button class="view-btn" onclick="showProductDetails(${product.id})">👁️</button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+
+    grid.innerHTML = html;
+}
+
 function showProductDetails(productId) {
     const product = allProducts.find(p => p.id === productId);
     if (!product) return;
@@ -363,7 +286,6 @@ function showNotification(message) {
     setTimeout(() => notification.remove(), 2000);
 }
 
-// ===== مستمعي الأحداث (محدث للتقسيم) =====
 function setupEventListeners() {
     const filtersContainer = document.getElementById('categoryFilters');
     if (filtersContainer) {
@@ -372,36 +294,16 @@ function setupEventListeners() {
                 document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
                 e.target.classList.add('active');
                 currentCategory = e.target.dataset.category;
-                
-                // تصفية المنتجات
-                if (currentCategory === 'all') {
-                    filteredProducts = [...allProducts];
-                } else {
-                    filteredProducts = allProducts.filter(p => p.category === currentCategory);
-                }
-                
-                resetAndRender();
+                renderProducts();
             }
         });
     }
     
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
-        let searchTimeout;
         searchInput.addEventListener('input', (e) => {
-            // تأخير البحث لتجنب التحميل الزائد
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                searchQuery = e.target.value.toLowerCase();
-                
-                // تصفية المنتجات
-                filteredProducts = allProducts.filter(p => 
-                    p.name.toLowerCase().includes(searchQuery) ||
-                    (p.description && p.description.toLowerCase().includes(searchQuery))
-                );
-                
-                resetAndRender();
-            }, 300); // تأخير 300ms
+            searchQuery = e.target.value;
+            renderProducts();
         });
     }
     
@@ -435,7 +337,6 @@ function setupEventListeners() {
     });
 }
 
-// ===== بدء التطبيق =====
 document.addEventListener('DOMContentLoaded', () => {
     init();
     
