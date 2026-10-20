@@ -1089,3 +1089,34 @@ h1, h2, h3, h4 {
         transition-duration: 0.01ms !important;
     }
 }
+/* ===== تحسينات أداء حاسمة للمنتجات الكثيرة ===== */
+.product-card {
+    /* يمنع المتصفح من إعادة حساب الصفحة عند تغيير محتوى البطاقة */
+    contain: layout style paint;
+    /* تحسين أداء الرسوميات */
+    will-change: transform;
+}
+
+/* عنصر وهمي لمراقبة الوصول لنهاية الصفحة */
+#scroll-sentinel {
+    height: 40px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+}
+
+/* مؤشر التحميل */
+.loading-spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(200, 162, 93, 0.2);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
