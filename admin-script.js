@@ -720,7 +720,27 @@ async function base64ToBlob(base64String) {
     const response = await fetch(base64String);
     return await response.blob();
 }
-
+// ===== إعادة تهيئة IDs =====
+function reorganizeIds() {
+    if (!storeData || !storeData.products) {
+        showToast('لا توجد منتجات', 'error');
+        return;
+    }
+    
+    if (!confirm('⚠️ سيتم إعادة ترقيم جميع المنتجات من 1 بالتسلسل.\n\nهذا سيغير IDs المنتجات الحالية.\n\nهل أنت متأكد؟')) {
+        return;
+    }
+    
+    // إعادة ترقيم المنتجات
+    storeData.products.forEach((product, index) => {
+        product.id = index + 1;
+    });
+    
+    saveToLocalStorage();
+    renderProducts();
+    
+    showToast(`✅ تم إعادة تهيئة ${storeData.products.length} منتج (IDs: 1-${storeData.products.length})`);
+}
 // ===== الإشعارات =====
 function showToast(msg, type = 'success') {
     const t = document.getElementById('toast');
