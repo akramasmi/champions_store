@@ -384,7 +384,6 @@ h1, h2, h3, h4 {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 24px;
 }
-
 .product-card {
     background: rgba(44, 44, 46, 0.6);
     backdrop-filter: blur(20px);
@@ -394,9 +393,7 @@ h1, h2, h3, h4 {
     transition: all var(--transition-slow);
     border: 1px solid rgba(200, 162, 93, 0.15);
     position: relative;
-    contain: layout style paint;
-    content-visibility: auto;
-    contain-intrinsic-size: 450px;
+    /* ✅ إزالة content-visibility و contain-intrinsic-size */
 }
 
 .product-card::before {
