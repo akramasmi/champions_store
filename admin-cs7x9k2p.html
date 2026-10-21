@@ -34,6 +34,7 @@
             <button class="tab-btn active" data-tab="products">📦 المنتجات</button>
             <button class="tab-btn" data-tab="categories">🏷️ الفئات</button>
             <button class="tab-btn" data-tab="store">🏪 المتجر</button>
+            <button class="tab-btn" data-tab="footer">🦶 الفوتر</button>
             <button class="tab-btn" data-tab="about">📝 من نحن</button>
             <button class="tab-btn" data-tab="logo">🖼️ اللوغو</button>
             <button class="tab-btn" data-tab="tools">🛠️ أدوات</button>
@@ -51,9 +52,24 @@
                         <button class="btn-reorganize" onclick="reorganizeIds()">🔢 ترتيب IDs</button>
                     </div>
                 </div>
-                <div class="admin-search">
-                    <input type="text" id="adminProductSearch" placeholder="🔍 ابحث عن منتج..." oninput="filterAdminProducts()">
+                
+                <!-- ✅ شريط البحث والفرز -->
+                <div class="admin-filters-bar">
+                    <input type="text" id="adminProductSearch" placeholder="🔍 ابحث..." oninput="filterAdminProducts()">
+                    <select id="adminCategoryFilter" onchange="filterAdminProducts()">
+                        <option value="all">🏷️ جميع الفئات</option>
+                    </select>
+                    <select id="adminSortBy" onchange="filterAdminProducts()">
+                        <option value="default">🔽 ترتيب: افتراضي</option>
+                        <option value="name-asc">🔤 الاسم (أ-ي)</option>
+                        <option value="name-desc">🔤 الاسم (ي-أ)</option>
+                        <option value="price-asc">💰 السعر ↑</option>
+                        <option value="price-desc">💰 السعر ↓</option>
+                        <option value="brand">🏢 الشركة</option>
+                        <option value="category">🏷️ الفئة</option>
+                    </select>
                 </div>
+                
                 <div class="products-table" id="productsTable"></div>
             </section>
 
@@ -72,7 +88,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>وصف الفئة (اختياري)</label>
+                        <label>وصف الفئة (يظهر في الـ home)</label>
                         <textarea id="newCatDescription" rows="2" placeholder="وصف مختصر عن الفئة..."></textarea>
                     </div>
                     <button class="btn-save" onclick="addCategory()">➕ إضافة فئة</button>
@@ -87,9 +103,45 @@
                     <div class="form-group"><label>اسم المتجر</label><input type="text" id="storeName"></div>
                     <div class="form-group"><label>الوصف القصير</label><input type="text" id="storeTagline"></div>
                     <div class="form-group"><label>رقم واتساب</label><input type="text" id="storeWhatsapp" placeholder="963900000000"></div>
-                    <div class="form-group"><label>إنستغرام</label><input type="text" id="storeInstagram"></div>
-                    <div class="form-group"><label>العنوان</label><input type="text" id="storeLocation"></div>
+                    <div class="form-group"><label>إنستغرام (بدون @)</label><input type="text" id="storeInstagram"></div>
+                    <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="storeEmail" placeholder="info@example.com"></div>
+                    <div class="form-group"><label>العنوان / الموقع</label><input type="text" id="storeLocation"></div>
                     <button class="btn-save" onclick="saveStoreInfo()">💾 حفظ</button>
+                </div>
+            </section>
+
+            <!-- ✅ تبويب الفوتر الجديد -->
+            <section class="tab-content" id="footerTab">
+                <h2>🦶 إعدادات الفوتر</h2>
+                <div class="admin-form-card">
+                    <div class="info-box">
+                        <strong>💡 ملاحظة:</strong> هذه الإعدادات تظهر في أسفل الصفحة الرئيسية (الفوتر) وقسم "تواصل معنا".
+                    </div>
+                    <div class="form-group">
+                        <label>وصف الفوتر</label>
+                        <input type="text" id="footerDescription" placeholder="مكملات غذائية فاخرة">
+                    </div>
+                    <div class="form-group">
+                        <label>حقوق النشر</label>
+                        <input type="text" id="footerCopyright" placeholder="© 2026 Champions Store">
+                    </div>
+                    <div class="form-group">
+                        <label>📱 رقم واتساب (للقسم التواصل)</label>
+                        <input type="text" id="footerWhatsapp" placeholder="963900000000">
+                    </div>
+                    <div class="form-group">
+                        <label>📸 حساب إنستغرام (بدون @)</label>
+                        <input type="text" id="footerInstagram" placeholder="champions_store">
+                    </div>
+                    <div class="form-group">
+                        <label>📍 الموقع / العنوان</label>
+                        <input type="text" id="footerLocation" placeholder="دمشق - سوريا">
+                    </div>
+                    <div class="form-group">
+                        <label>📧 البريد الإلكتروني (اختياري)</label>
+                        <input type="email" id="footerEmail" placeholder="info@example.com">
+                    </div>
+                    <button class="btn-save" onclick="saveFooterInfo()">💾 حفظ إعدادات الفوتر</button>
                 </div>
             </section>
 
@@ -198,7 +250,7 @@
         </main>
     </div>
 
-    <!-- مودال المنتج المحدث -->
+    <!-- مودال المنتج -->
     <div class="modal" id="productModal">
         <div class="modal-content modal-large">
             <div class="modal-header">
@@ -268,7 +320,7 @@
                     <h4>📝 الوصف</h4>
                     <div class="form-group">
                         <label>وصف المنتج</label>
-                        <textarea id="productDescription" rows="3" placeholder="وصف مختصر عن المنتج..."></textarea>
+                        <textarea id="productDescription" rows="3" placeholder="وصف مختصر..."></textarea>
                     </div>
                 </div>
                 
