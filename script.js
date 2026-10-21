@@ -12,64 +12,76 @@ let isRendering = false;
 let scrollObserver = null;
 let sentinelElement = null;
 
-// ✅ placeholder مدمج (لا يحتاج إنترنت)
+// ✅ placeholder مدمج (SVG)
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCBmaWxsPSIjMWMxYzFlIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIvPjx0ZXh0IGZpbGw9IiNjOGEyNWQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgeD0iNTAlIiB5PSI1MCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
 
-// ✅ دالة تحويل الروابط إلى روابط مطلقة
+// ✅ دالة تحويل الروابط - روابط نسبية بسيطة
 function getImageUrl(imagePath) {
     if (!imagePath) return PLACEHOLDER_IMAGE;
     
     // Base64 - اتركه كما هو
     if (imagePath.startsWith('data:')) return imagePath;
     
-    // placeholder خارجي - استبدله بالمدمج
-    if (imagePath.includes('placeholder.com') || imagePath.includes('via.placeholder')) {
-        return PLACEHOLDER_IMAGE;
+    // روابط خارجية محجوبة - حوّلها إلى محلية
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        const fileName = imagePath.split('/').pop().split('?')[0];
+        return `images/${fileName}`;
     }
     
-    const origin = window.location.origin;
-    
-    // استخراج اسم الملف من أي رابط
-    let fileName = imagePath;
-    if (imagePath.includes('/')) {
-        fileName = imagePath.split('/').pop().split('?')[0];
+    // روابط نسبية - وحّد الصيغة
+    if (imagePath.startsWith('./images/') || imagePath.startsWith('/images/')) {
+        return imagePath.replace('./', '').replace(/^\//, '');
     }
     
-    // ✅ استخدم رابط مطلق كامل
-    return `${origin}/images/${fileName}`;
+    if (imagePath.startsWith('./imgs/') || imagePath.startsWith('/imgs/')) {
+        return imagePath.replace('./', '').replace(/^\//, '');
+    }
+    
+    if (imagePath.startsWith('images/') || imagePath.startsWith('imgs/')) {
+        return imagePath;
+    }
+    
+    // أي نص آخر - افترض أنه اسم ملف
+    return `images/${imagePath}`;
 }
 
 // ✅ نظام fallback ذكي عند فشل تحميل الصورة
 function handleImageError(img) {
-    // منع التكرار اللانهائي
     if (img.dataset.fallbackTried) {
         img.src = PLACEHOLDER_IMAGE;
         return;
     }
     
     img.dataset.fallbackTried = '1';
-    
     const currentSrc = img.src;
     
-    // جرب 1: تحويل /images/ إلى /imgs/
+    console.warn('⚠️ فشل تحميل:', currentSrc);
+    
+    // جرب 1: /images/ → /imgs/
     if (currentSrc.includes('/images/')) {
         img.src = currentSrc.replace('/images/', '/imgs/');
         return;
     }
     
-    // جرب 2: تحويل /imgs/ إلى /images/
+    // جرب 2: /imgs/ → /images/
     if (currentSrc.includes('/imgs/')) {
         img.src = currentSrc.replace('/imgs/', '/images/');
         return;
     }
     
-    // جرب 3: تحويل .webp إلى .png
+    // جرب 3: images/ → imgs/ (بدون /)
+    if (currentSrc.includes('images/') && !currentSrc.includes('/images/')) {
+        img.src = currentSrc.replace('images/', 'imgs/');
+        return;
+    }
+    
+    // جرب 4: .webp → .png
     if (currentSrc.endsWith('.webp')) {
         img.src = currentSrc.replace('.webp', '.png');
         return;
     }
     
-    // جرب 4: تحويل .webp إلى .jpg
+    // جرب 5: .webp → .jpg
     if (currentSrc.endsWith('.webp')) {
         img.src = currentSrc.replace('.webp', '.jpg');
         return;
@@ -103,6 +115,12 @@ async function init() {
         filteredProducts = [...allProducts];
         
         console.log(`✅ تم تحميل ${allProducts.length} منتج`);
+        
+        // ✅ عرض أول 5 روابط للصور في Console للفحص
+        console.log('🔍 روابط الصور الأولى:');
+        allProducts.slice(0, 5).forEach(p => {
+            console.log(`  • ${p.name}: ${getImageUrl(p.image)}`);
+        });
         
         updateSiteContent();
         renderCategories();
@@ -154,8 +172,6 @@ function renderNextChunk() {
     const end = start + CHUNK_SIZE;
     const chunkProducts = filteredProducts.slice(start, end);
     
-    console.log(`📦 الدفعة ${currentChunk + 1}: ${start + 1}-${Math.min(end, filteredProducts.length)} من ${filteredProducts.length}`);
-    
     if (filteredProducts.length === 0) {
         grid.innerHTML = '';
         if (noResults) noResults.style.display = 'block';
@@ -169,7 +185,6 @@ function renderNextChunk() {
     if (chunkProducts.length === 0) {
         if (sentinelElement) sentinelElement.style.display = 'none';
         isRendering = false;
-        console.log('✅ تم عرض جميع المنتجات');
         return;
     }
     
