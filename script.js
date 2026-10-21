@@ -6,10 +6,13 @@ let currentCategory = 'all';
 let searchQuery = '';
 let cart = JSON.parse(localStorage.getItem('championsCart')) || [];
 
-const CHUNK_SIZE = 12;
+// ✅ إعدادات التحميل التدريجي
+const CHUNK_SIZE = 12; // عدد المنتجات في كل دفعة
 let currentChunk = 0;
 let isRendering = false;
+let scrollObserver = null;
 
+// ✅ placeholder مدمج
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="500"%3E%3Crect fill="%231c1c1e" width="400" height="500"/%3E%3Ctext fill="%23c8a25d" font-family="Arial" font-size="24" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3ENo Image%3C/text%3E%3C/svg%3E';
 
 async function init() {
@@ -34,11 +37,14 @@ async function init() {
         
         updateSiteContent();
         renderCategories();
+        
+        // ✅ بدء التحميل التدريجي
         currentChunk = 0;
-        renderChunk();
+        renderNextChunk();
+        
         updateCartUI();
         setupEventListeners();
-        setupLazyLoading();
+        setupInfiniteScroll(); // ✅ تفعيل التمرير اللانهائي
         
     } catch (error) {
         console.error('❌ خطأ في التحميل:', error);
@@ -54,34 +60,47 @@ async function init() {
     }
 }
 
-function renderChunk() {
+// ✅ عرض الدفعة التالية من المنتجات
+function renderNextChunk() {
     if (isRendering) return;
     isRendering = true;
     
     const grid = document.getElementById('productGrid');
     const noResults = document.getElementById('noResults');
+    const sentinel = document.getElementById('scroll-sentinel');
     
-    if (currentChunk === 0) {
-        grid.innerHTML = '';
-    }
-    
+    // حساب الحدود
     const start = currentChunk * CHUNK_SIZE;
     const end = start + CHUNK_SIZE;
     const chunkProducts = filteredProducts.slice(start, end);
     
+    // لا توجد منتجات
     if (filteredProducts.length === 0) {
+        grid.innerHTML = '';
         if (noResults) noResults.style.display = 'block';
+        if (sentinel) sentinel.style.display = 'none';
         isRendering = false;
         return;
     }
     
     if (noResults) noResults.style.display = 'none';
     
+    // انتهت جميع المنتجات
     if (chunkProducts.length === 0) {
+        if (sentinel) {
+            sentinel.innerHTML = '<p style="color:var(--text-secondary);font-size:0.9rem;">✅ تم عرض جميع المنتجات</p>';
+        }
         isRendering = false;
         return;
     }
     
+    // عرض مؤشر التحميل
+    if (sentinel) {
+        sentinel.style.display = 'flex';
+        sentinel.innerHTML = '<div class="loading-spinner"></div>';
+    }
+    
+    // بناء HTML للدفعة الحالية
     const html = chunkProducts.map(product => {
         const category = storeData.categories.find(c => c.id === product.category);
         const badgeClass = product.badge === 'خصم' ? 'sale' : '';
@@ -115,83 +134,68 @@ function renderChunk() {
         </div>`;
     }).join('');
     
+    // ✅ إضافة الدفعة الجديدة (بدون مسح الكل)
     grid.insertAdjacentHTML('beforeend', html);
     
     currentChunk++;
     isRendering = false;
     
     console.log(`✅ تم عرض الدفعة ${currentChunk}: ${chunkProducts.length} منتج (المجموع: ${Math.min(end, filteredProducts.length)}/${filteredProducts.length})`);
+    
+    // إذا انتهت جميع المنتجات، أخفِ مؤشر التحميل
+    if (end >= filteredProducts.length && sentinel) {
+        sentinel.innerHTML = '<p style="color:var(--text-secondary);font-size:0.9rem;">✅ تم عرض جميع المنتجات</p>';
+    }
 }
 
+// ✅ إعادة تعيين العرض (عند البحث أو الفلترة)
 function resetAndRender() {
     currentChunk = 0;
-    isRendering = false;
-    document.getElementById('productGrid').innerHTML = '';
-    renderChunk();
+    const grid = document.getElementById('productGrid');
+    grid.innerHTML = '';
+    
+    // إعادة تفعيل المراقب
+    if (scrollObserver) {
+        scrollObserver.disconnect();
+    }
+    
+    renderNextChunk();
+    setupInfiniteScroll();
 }
 
-function setupLazyLoading() {
-    // ✅ إزالة الـ sentinel القديم إن وجد
-    const oldSentinel = document.getElementById('scroll-sentinel');
-    if (oldSentinel) oldSentinel.remove();
-    
+// ✅ إعداد التمرير اللانهائي
+function setupInfiniteScroll() {
     const grid = document.getElementById('productGrid');
+    let sentinel = document.getElementById('scroll-sentinel');
     
-    // إنشاء sentinel جديد
-    const sentinel = document.createElement('div');
-    sentinel.id = 'scroll-sentinel';
-    sentinel.style.cssText = 'height:50px;width:100%;display:flex;justify-content:center;align-items:center;margin-top:20px;';
-    sentinel.innerHTML = '<div style="color:var(--text-secondary);font-size:0.9rem;">⏳ جاري تحميل المزيد...</div>';
-    grid.appendChild(sentinel);
+    // إنشاء عنصر sentinel إذا لم يكن موجوداً
+    if (!sentinel) {
+        sentinel = document.createElement('div');
+        sentinel.id = 'scroll-sentinel';
+        sentinel.style.display = 'none';
+        grid.appendChild(sentinel);
+    }
     
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting && !isRendering) {
-                const totalDisplayed = currentChunk * CHUNK_SIZE;
-                
-                if (totalDisplayed < filteredProducts.length) {
-                    // تأخير قصير لضمان سلاسة التمرير
-                    setTimeout(() => {
-                        renderChunk();
-                        
-                        // إذا انتهت جميع المنتجات، أخفِ الـ sentinel
-                        if ((currentChunk * CHUNK_SIZE) >= filteredProducts.length) {
-                            sentinel.innerHTML = '<p style="color:var(--text-secondary);font-size:0.9rem;padding:20px;">✅ تم عرض جميع المنتجات</p>';
-                            observer.disconnect();
-                        }
-                    }, 150);
-                } else {
-                    sentinel.innerHTML = '<p style="color:var(--text-secondary);font-size:0.9rem;padding:20px;">✅ تم عرض جميع المنتجات</p>';
-                    observer.disconnect();
-                }
-            }
-        });
-    }, {
-        root: null,
-        rootMargin: '300px',
-        threshold: 0.1
-    });
-    
-    observer.observe(sentinel);
-    
-    // ✅ Fallback: إذا لم يعمل الـ observer، استخدم scroll event
-    let scrollTimeout;
-    window.addEventListener('scroll', () => {
-        clearTimeout(scrollTimeout);
-        scrollTimeout = setTimeout(() => {
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            const windowHeight = window.innerHeight;
-            const documentHeight = document.documentElement.scrollHeight;
+    // إنشاء مراقب التقاطع
+    scrollObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !isRendering) {
+            const totalDisplayed = currentChunk * CHUNK_SIZE;
             
-            // إذا اقترب المستخدم من الأسفل بـ 500px
-            if (scrollTop + windowHeight >= documentHeight - 500) {
-                const totalDisplayed = currentChunk * CHUNK_SIZE;
-                if (totalDisplayed < filteredProducts.length && !isRendering) {
-                    renderChunk();
+            // إذا كانت هناك منتجات أخرى
+            if (totalDisplayed < filteredProducts.length) {
+                // استخدام requestIdleCallback للأداء الأفضل
+                if ('requestIdleCallback' in window) {
+                    requestIdleCallback(() => renderNextChunk());
+                } else {
+                    setTimeout(() => renderNextChunk(), 100);
                 }
             }
-        }, 100);
+        }
+    }, {
+        rootMargin: '300px' // بدء التحميل قبل الوصول بـ 300 بكسل
     });
+    
+    scrollObserver.observe(sentinel);
 }
 
 function updateSiteContent() {
