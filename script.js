@@ -12,46 +12,72 @@ let isRendering = false;
 let scrollObserver = null;
 let sentinelElement = null;
 
-// ✅ placeholder مدمج (لا يحتاج إنترنت)
+// placeholder مدمج (لا يحتاج إنترنت)
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCBmaWxsPSIjMWMxYzFlIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIvPjx0ZXh0IGZpbGw9IiNjOGEyNWQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgeD0iNTAlIiB5PSI1MCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
 
-// ✅ تحويل أي رابط خارجي إلى محلي
+// ✅ روابط مطلقة + نظام fallback ذكي
 function getImageUrl(imagePath) {
     if (!imagePath) return PLACEHOLDER_IMAGE;
     
     // Base64 - اتركه كما هو
     if (imagePath.startsWith('data:')) return imagePath;
     
-    // روابط raw.githubusercontent.com - حوّلها إلى محلية
-    if (imagePath.includes('raw.githubusercontent.com')) {
-        const fileName = imagePath.split('/').pop();
-        return './images/' + fileName;
-    }
-    
-    // روابط GitHub الأخرى
-    if (imagePath.includes('github.com') || imagePath.includes('githubusercontent')) {
-        const fileName = imagePath.split('/').pop();
-        return './images/' + fileName;
-    }
-    
     // placeholder خارجي - استبدله بالمدمج
     if (imagePath.includes('placeholder.com') || imagePath.includes('via.placeholder')) {
         return PLACEHOLDER_IMAGE;
     }
     
-    // روابط محلية - اتركها كما هي
-    if (imagePath.startsWith('./') || imagePath.startsWith('/') || imagePath.startsWith('images/')) {
-        return imagePath;
+    const origin = window.location.origin;
+    
+    // استخراج اسم الملف من أي رابط
+    let fileName = imagePath;
+    
+    if (imagePath.includes('/')) {
+        fileName = imagePath.split('/').pop().split('?')[0];
     }
     
-    // أي رابط خارجي آخر
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        const fileName = imagePath.split('/').pop().split('?')[0];
-        return './images/' + fileName;
+    // ✅ استخدم رابط مطلق كامل (ليس نسبياً)
+    return `${origin}/images/${fileName}`;
+}
+
+// ✅ نظام fallback ذكي عند فشل تحميل الصورة
+function handleImageError(img) {
+    // منع التكرار
+    if (img.dataset.fallbackTried) {
+        img.src = PLACEHOLDER_IMAGE;
+        return;
     }
     
-    // اسم ملف عادي
-    return './images/' + imagePath;
+    img.dataset.fallbackTried = '1';
+    
+    const currentSrc = img.src;
+    
+    // جرب 1: تحويل /images/ إلى /imgs/
+    if (currentSrc.includes('/images/')) {
+        img.src = currentSrc.replace('/images/', '/imgs/');
+        return;
+    }
+    
+    // جرب 2: تحويل /imgs/ إلى /images/
+    if (currentSrc.includes('/imgs/')) {
+        img.src = currentSrc.replace('/imgs/', '/images/');
+        return;
+    }
+    
+    // جرب 3: تحويل .webp إلى .png
+    if (currentSrc.endsWith('.webp')) {
+        img.src = currentSrc.replace('.webp', '.png');
+        return;
+    }
+    
+    // جرب 4: تحويل .webp إلى .jpg
+    if (currentSrc.endsWith('.webp')) {
+        img.src = currentSrc.replace('.webp', '.jpg');
+        return;
+    }
+    
+    // كل المحاولات فشلت
+    img.src = PLACEHOLDER_IMAGE;
 }
 
 async function init() {
@@ -166,7 +192,7 @@ function renderNextChunk() {
                      class="product-image" 
                      loading="lazy" 
                      decoding="async"
-                     onerror="this.src='${PLACEHOLDER_IMAGE}'"
+                     onerror="handleImageError(this)"
                      onclick="showProductDetails(${product.id})">
             </div>
             <div class="product-info">
@@ -302,7 +328,7 @@ function showProductDetails(productId) {
     const imageSrc = getImageUrl(product.image);
 
     details.innerHTML = `
-        <img src="${imageSrc}" alt="${product.name}" class="product-detail-image" onerror="this.src='${PLACEHOLDER_IMAGE}'">
+        <img src="${imageSrc}" alt="${product.name}" class="product-detail-image" onerror="handleImageError(this)">
         <div class="product-detail-info">
             <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
             <h2>${product.name}</h2>
@@ -381,7 +407,7 @@ function renderCartItems() {
     }
     container.innerHTML = cart.map(item => `
         <div class="cart-item">
-            <img src="${getImageUrl(item.image)}" alt="${item.name}" loading="lazy" onerror="this.src='${PLACEHOLDER_IMAGE}'">
+            <img src="${getImageUrl(item.image)}" alt="${item.name}" loading="lazy" onerror="handleImageError(this)">
             <div class="cart-item-info">
                 <div class="cart-item-name">${item.name}</div>
                 <div class="cart-item-price">${item.price}$</div>
