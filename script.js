@@ -12,10 +12,10 @@ let isRendering = false;
 let scrollObserver = null;
 let sentinelElement = null;
 
-// placeholder مدمج (لا يحتاج إنترنت)
+// ✅ placeholder مدمج (لا يحتاج إنترنت)
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCBmaWxsPSIjMWMxYzFlIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIvPjx0ZXh0IGZpbGw9IiNjOGEyNWQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgeD0iNTAlIiB5PSI1MCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
 
-// ✅ روابط مطلقة + نظام fallback ذكي
+// ✅ دالة تحويل الروابط إلى روابط مطلقة
 function getImageUrl(imagePath) {
     if (!imagePath) return PLACEHOLDER_IMAGE;
     
@@ -31,18 +31,17 @@ function getImageUrl(imagePath) {
     
     // استخراج اسم الملف من أي رابط
     let fileName = imagePath;
-    
     if (imagePath.includes('/')) {
         fileName = imagePath.split('/').pop().split('?')[0];
     }
     
-    // ✅ استخدم رابط مطلق كامل (ليس نسبياً)
+    // ✅ استخدم رابط مطلق كامل
     return `${origin}/images/${fileName}`;
 }
 
 // ✅ نظام fallback ذكي عند فشل تحميل الصورة
 function handleImageError(img) {
-    // منع التكرار
+    // منع التكرار اللانهائي
     if (img.dataset.fallbackTried) {
         img.src = PLACEHOLDER_IMAGE;
         return;
@@ -328,7 +327,10 @@ function showProductDetails(productId) {
     const imageSrc = getImageUrl(product.image);
 
     details.innerHTML = `
-        <img src="${imageSrc}" alt="${product.name}" class="product-detail-image" onerror="handleImageError(this)">
+        <img src="${imageSrc}" 
+             alt="${product.name}" 
+             class="product-detail-image" 
+             onerror="handleImageError(this)">
         <div class="product-detail-info">
             <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
             <h2>${product.name}</h2>
@@ -407,7 +409,10 @@ function renderCartItems() {
     }
     container.innerHTML = cart.map(item => `
         <div class="cart-item">
-            <img src="${getImageUrl(item.image)}" alt="${item.name}" loading="lazy" onerror="handleImageError(this)">
+            <img src="${getImageUrl(item.image)}" 
+                 alt="${item.name}" 
+                 loading="lazy"
+                 onerror="handleImageError(this)">
             <div class="cart-item-info">
                 <div class="cart-item-name">${item.name}</div>
                 <div class="cart-item-price">${item.price}$</div>
