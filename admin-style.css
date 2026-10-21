@@ -33,7 +33,6 @@
 }
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
 html { scroll-behavior: smooth; font-size: 16px; }
 
 body {
@@ -46,13 +45,7 @@ body {
 }
 
 /* Login */
-.login-screen {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: var(--gradient-dark);
-}
+.login-screen { min-height: 100vh; display: flex; justify-content: center; align-items: center; background: var(--gradient-dark); }
 
 .login-box {
     background: rgba(18, 18, 26, 0.8);
@@ -81,11 +74,7 @@ body {
     font-family: inherit;
 }
 
-.login-box input:focus {
-    outline: none;
-    border-color: var(--gold);
-    box-shadow: 0 0 0 3px rgba(200, 162, 93, 0.1);
-}
+.login-box input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(200, 162, 93, 0.1); }
 
 .login-box button {
     width: 100%;
@@ -135,7 +124,6 @@ body {
 
 .btn-publish { background: var(--gradient-gold); color: var(--primary); box-shadow: var(--shadow-gold); }
 .btn-logout { background: var(--danger); color: white; }
-
 .header-actions button:hover { transform: translateY(-2px); }
 
 /* Tabs */
@@ -205,30 +193,40 @@ body {
 
 .btn-add { background: var(--gradient-gold); color: var(--primary); box-shadow: var(--shadow-gold); }
 .btn-reorganize { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; }
-
 .btn-add:hover, .btn-reorganize:hover { transform: translateY(-2px); }
 
-/* Admin Search */
-.admin-search {
+/* ✅ شريط الفلترة والفرز الجديد */
+.admin-filters-bar {
+    display: flex;
+    gap: 12px;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    padding: 16px;
+    background: rgba(44, 44, 46, 0.4);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(200, 162, 93, 0.15);
 }
 
-.admin-search input {
-    width: 100%;
-    max-width: 400px;
-    padding: 12px 18px;
+.admin-filters-bar input,
+.admin-filters-bar select {
+    padding: 10px 14px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(200, 162, 93, 0.3);
     border-radius: var(--radius-md);
     color: var(--text);
     font-family: inherit;
     font-size: 0.9rem;
+    flex: 1;
+    min-width: 150px;
 }
 
-.admin-search input:focus {
+.admin-filters-bar input:focus,
+.admin-filters-bar select:focus {
     outline: none;
     border-color: var(--gold);
 }
+
+.admin-filters-bar select { cursor: pointer; }
 
 /* Products Table */
 .products-table {
@@ -282,7 +280,6 @@ body {
 
 .btn-edit { background: var(--info); color: white; }
 .btn-delete { background: var(--danger); color: white; }
-
 .product-actions button:hover { transform: scale(1.05); }
 
 /* Form Card */
@@ -304,12 +301,7 @@ body {
 
 .form-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
 
-.form-section h4 {
-    color: var(--gold);
-    font-size: 1rem;
-    margin-bottom: 16px;
-    font-weight: 700;
-}
+.form-section h4 { color: var(--gold); font-size: 1rem; margin-bottom: 16px; font-weight: 700; }
 
 .form-group { margin-bottom: 16px; }
 
@@ -344,11 +336,7 @@ body {
     box-shadow: 0 0 0 3px rgba(200, 162, 93, 0.1);
 }
 
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
 .btn-save {
     background: var(--gradient-gold);
@@ -424,7 +412,6 @@ body {
 }
 
 .modal-header h3 { font-size: 1.2rem; }
-
 .modal-body { padding: 20px; }
 
 .modal-footer {
@@ -480,19 +467,11 @@ body {
     transition: all var(--transition-base);
 }
 
-.tool-card:hover {
-    transform: translateY(-4px);
-    border-color: rgba(200, 162, 93, 0.4);
-    box-shadow: var(--shadow-gold-lg);
-}
+.tool-card:hover { transform: translateY(-4px); border-color: rgba(200, 162, 93, 0.4); box-shadow: var(--shadow-gold-lg); }
 
 .tool-icon { font-size: 2.5rem; margin-bottom: 12px; }
 
-.tool-card h3 {
-    color: var(--gold);
-    margin-bottom: 12px;
-    font-size: 1.1rem;
-}
+.tool-card h3 { color: var(--gold); margin-bottom: 12px; font-size: 1.1rem; }
 
 .tool-card .btn-save { width: 100%; padding: 10px; font-size: 0.85rem; }
 
@@ -591,11 +570,7 @@ body {
     .tab-btn { padding: 8px 14px; font-size: 0.8rem; }
     .admin-content { padding: 20px 16px; }
     
-    .product-row {
-        grid-template-columns: 1fr;
-        gap: 8px;
-    }
-    
+    .product-row { grid-template-columns: 1fr; gap: 8px; }
     .product-row.header { display: none; }
     
     .form-row { grid-template-columns: 1fr; }
@@ -603,4 +578,8 @@ body {
     .login-box { padding: 40px 30px; }
     .modal-content { max-width: 100%; margin: 10px; }
     .modal-large { max-width: 100%; }
+    
+    .admin-filters-bar { flex-direction: column; }
+    .admin-filters-bar input,
+    .admin-filters-bar select { width: 100%; min-width: 100%; }
 }
