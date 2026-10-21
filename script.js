@@ -19,7 +19,13 @@ const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/20
 async function init() {
     try {
         const grid = document.getElementById('productGrid');
-        grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gold);">⏳ جاري تحميل المنتجات...</div>';
+        
+        // ✅ دائرة تحميل بدلاً من النص
+        grid.innerHTML = `
+            <div style="grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; padding: 60px 0;">
+                <div class="loading-spinner"></div>
+            </div>
+        `;
         
         const response = await fetch('products.json?t=' + Date.now());
         if (!response.ok) throw new Error('فشل في تحميل المنتجات');
@@ -41,7 +47,7 @@ async function init() {
         
         // بدء التحميل التدريجي
         currentChunk = 0;
-        createSentinel(); // ✅ إنشاء sentinel أولاً
+        createSentinel();
         renderNextChunk();
         setupInfiniteScroll();
         
@@ -62,7 +68,7 @@ async function init() {
     }
 }
 
-// ✅ إنشاء عنصر sentinel بشكل صحيح
+// ✅ إنشاء عنصر sentinel
 function createSentinel() {
     const grid = document.getElementById('productGrid');
     
@@ -107,15 +113,16 @@ function renderNextChunk() {
     
     // انتهت جميع المنتجات
     if (chunkProducts.length === 0) {
+        // ✅ إخفاء sentinel فقط بدون رسالة
         if (sentinelElement) {
-            sentinelElement.innerHTML = '<p style="color:var(--text-secondary);font-size:0.9rem;padding:20px;">✅ تم عرض جميع المنتجات</p>';
+            sentinelElement.style.display = 'none';
         }
         isRendering = false;
         console.log('✅ تم عرض جميع المنتجات');
         return;
     }
     
-    // عرض مؤشر التحميل
+    // ✅ عرض مؤشر التحميل (spinner)
     if (sentinelElement) {
         sentinelElement.style.display = 'flex';
         sentinelElement.innerHTML = '<div class="loading-spinner"></div>';
@@ -167,9 +174,9 @@ function renderNextChunk() {
     
     console.log(`✅ تم عرض الدفعة ${currentChunk}: ${chunkProducts.length} منتج (المجموع: ${Math.min(end, filteredProducts.length)}/${filteredProducts.length})`);
     
-    // إذا انتهت جميع المنتجات
+    // ✅ إذا انتهت جميع المنتجات، إخفاء sentinel بدون رسالة
     if (end >= filteredProducts.length && sentinelElement) {
-        sentinelElement.innerHTML = '<p style="color:var(--text-secondary);font-size:0.9rem;padding:20px;">✅ تم عرض جميع المنتجات</p>';
+        sentinelElement.style.display = 'none';
     }
 }
 
@@ -229,7 +236,7 @@ function setupInfiniteScroll() {
             }
         }
     }, {
-        rootMargin: '300px' // بدء التحميل قبل الوصول بـ 300 بكسل
+        rootMargin: '300px'
     });
     
     // مراقبة sentinel
