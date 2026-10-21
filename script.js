@@ -6,13 +6,14 @@ let currentCategory = 'all';
 let searchQuery = '';
 let cart = JSON.parse(localStorage.getItem('championsCart')) || [];
 
-// ✅ إعدادات التحميل التدريجي
-const CHUNK_SIZE = 12; // عدد المنتجات في كل دفعة
+// إعدادات التحميل التدريجي
+const CHUNK_SIZE = 12;
 let currentChunk = 0;
 let isRendering = false;
 let scrollObserver = null;
+let sentinelElement = null;
 
-// ✅ placeholder مدمج
+// placeholder مدمج
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="500"%3E%3Crect fill="%231c1c1e" width="400" height="500"/%3E%3Ctext fill="%23c8a25d" font-family="Arial" font-size="24" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3ENo Image%3C/text%3E%3C/svg%3E';
 
 async function init() {
@@ -38,13 +39,14 @@ async function init() {
         updateSiteContent();
         renderCategories();
         
-        // ✅ بدء التحميل التدريجي
+        // بدء التحميل التدريجي
         currentChunk = 0;
+        createSentinel(); // ✅ إنشاء sentinel أولاً
         renderNextChunk();
+        setupInfiniteScroll();
         
         updateCartUI();
         setupEventListeners();
-        setupInfiniteScroll(); // ✅ تفعيل التمرير اللانهائي
         
     } catch (error) {
         console.error('❌ خطأ في التحميل:', error);
@@ -60,25 +62,43 @@ async function init() {
     }
 }
 
-// ✅ عرض الدفعة التالية من المنتجات
+// ✅ إنشاء عنصر sentinel بشكل صحيح
+function createSentinel() {
+    const grid = document.getElementById('productGrid');
+    
+    // حذف sentinel القديم إن وجد
+    const oldSentinel = document.getElementById('scroll-sentinel');
+    if (oldSentinel) oldSentinel.remove();
+    
+    // إنشاء sentinel جديد
+    sentinelElement = document.createElement('div');
+    sentinelElement.id = 'scroll-sentinel';
+    sentinelElement.style.cssText = 'height:60px;width:100%;display:flex;justify-content:center;align-items:center;margin-top:20px;';
+    grid.appendChild(sentinelElement);
+    
+    console.log('✅ تم إنشاء sentinel');
+}
+
+// ✅ عرض الدفعة التالية
 function renderNextChunk() {
     if (isRendering) return;
     isRendering = true;
     
     const grid = document.getElementById('productGrid');
     const noResults = document.getElementById('noResults');
-    const sentinel = document.getElementById('scroll-sentinel');
     
     // حساب الحدود
     const start = currentChunk * CHUNK_SIZE;
     const end = start + CHUNK_SIZE;
     const chunkProducts = filteredProducts.slice(start, end);
     
+    console.log(`📦 الدفعة ${currentChunk + 1}: منتجات ${start + 1} إلى ${Math.min(end, filteredProducts.length)} من ${filteredProducts.length}`);
+    
     // لا توجد منتجات
     if (filteredProducts.length === 0) {
         grid.innerHTML = '';
         if (noResults) noResults.style.display = 'block';
-        if (sentinel) sentinel.style.display = 'none';
+        if (sentinelElement) sentinelElement.style.display = 'none';
         isRendering = false;
         return;
     }
@@ -87,17 +107,18 @@ function renderNextChunk() {
     
     // انتهت جميع المنتجات
     if (chunkProducts.length === 0) {
-        if (sentinel) {
-            sentinel.innerHTML = '<p style="color:var(--text-secondary);font-size:0.9rem;">✅ تم عرض جميع المنتجات</p>';
+        if (sentinelElement) {
+            sentinelElement.innerHTML = '<p style="color:var(--text-secondary);font-size:0.9rem;padding:20px;">✅ تم عرض جميع المنتجات</p>';
         }
         isRendering = false;
+        console.log('✅ تم عرض جميع المنتجات');
         return;
     }
     
     // عرض مؤشر التحميل
-    if (sentinel) {
-        sentinel.style.display = 'flex';
-        sentinel.innerHTML = '<div class="loading-spinner"></div>';
+    if (sentinelElement) {
+        sentinelElement.style.display = 'flex';
+        sentinelElement.innerHTML = '<div class="loading-spinner"></div>';
     }
     
     // بناء HTML للدفعة الحالية
@@ -134,68 +155,86 @@ function renderNextChunk() {
         </div>`;
     }).join('');
     
-    // ✅ إضافة الدفعة الجديدة (بدون مسح الكل)
-    grid.insertAdjacentHTML('beforeend', html);
+    // ✅ إضافة الدفعة الجديدة قبل sentinel
+    if (sentinelElement) {
+        sentinelElement.insertAdjacentHTML('beforebegin', html);
+    } else {
+        grid.insertAdjacentHTML('beforeend', html);
+    }
     
     currentChunk++;
     isRendering = false;
     
     console.log(`✅ تم عرض الدفعة ${currentChunk}: ${chunkProducts.length} منتج (المجموع: ${Math.min(end, filteredProducts.length)}/${filteredProducts.length})`);
     
-    // إذا انتهت جميع المنتجات، أخفِ مؤشر التحميل
-    if (end >= filteredProducts.length && sentinel) {
-        sentinel.innerHTML = '<p style="color:var(--text-secondary);font-size:0.9rem;">✅ تم عرض جميع المنتجات</p>';
+    // إذا انتهت جميع المنتجات
+    if (end >= filteredProducts.length && sentinelElement) {
+        sentinelElement.innerHTML = '<p style="color:var(--text-secondary);font-size:0.9rem;padding:20px;">✅ تم عرض جميع المنتجات</p>';
     }
 }
 
-// ✅ إعادة تعيين العرض (عند البحث أو الفلترة)
+// ✅ إعادة تعيين العرض
 function resetAndRender() {
+    console.log('🔄 إعادة تعيين العرض...');
+    
     currentChunk = 0;
     const grid = document.getElementById('productGrid');
-    grid.innerHTML = '';
+    
+    // ✅ مسح المنتجات فقط (بدون حذف sentinel)
+    const cards = grid.querySelectorAll('.product-card');
+    cards.forEach(card => card.remove());
+    
+    // إعادة إنشاء sentinel
+    createSentinel();
+    
+    // عرض الدفعة الأولى
+    renderNextChunk();
     
     // إعادة تفعيل المراقب
-    if (scrollObserver) {
-        scrollObserver.disconnect();
-    }
-    
-    renderNextChunk();
     setupInfiniteScroll();
 }
 
 // ✅ إعداد التمرير اللانهائي
 function setupInfiniteScroll() {
-    const grid = document.getElementById('productGrid');
-    let sentinel = document.getElementById('scroll-sentinel');
-    
-    // إنشاء عنصر sentinel إذا لم يكن موجوداً
-    if (!sentinel) {
-        sentinel = document.createElement('div');
-        sentinel.id = 'scroll-sentinel';
-        sentinel.style.display = 'none';
-        grid.appendChild(sentinel);
+    // قطع المراقب القديم
+    if (scrollObserver) {
+        scrollObserver.disconnect();
+        console.log('🔌 تم قطع المراقب القديم');
     }
     
-    // إنشاء مراقب التقاطع
+    if (!sentinelElement) {
+        console.warn('⚠️ sentinel غير موجود!');
+        return;
+    }
+    
+    // إنشاء مراقب جديد
     scrollObserver = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && !isRendering) {
+        const entry = entries[0];
+        
+        if (entry.isIntersecting && !isRendering) {
+            console.log('👁️ sentinel مرئي - جاري تحميل الدفعة التالية...');
+            
             const totalDisplayed = currentChunk * CHUNK_SIZE;
             
-            // إذا كانت هناك منتجات أخرى
             if (totalDisplayed < filteredProducts.length) {
-                // استخدام requestIdleCallback للأداء الأفضل
+                // استخدام requestIdleCallback للأداء
                 if ('requestIdleCallback' in window) {
                     requestIdleCallback(() => renderNextChunk());
                 } else {
                     setTimeout(() => renderNextChunk(), 100);
                 }
+            } else {
+                console.log('✅ تم عرض جميع المنتجات - إيقاف المراقب');
+                scrollObserver.disconnect();
             }
         }
     }, {
         rootMargin: '300px' // بدء التحميل قبل الوصول بـ 300 بكسل
     });
     
-    scrollObserver.observe(sentinel);
+    // مراقبة sentinel
+    scrollObserver.observe(sentinelElement);
+    console.log('✅ تم تفعيل المراقب');
 }
 
 function updateSiteContent() {
