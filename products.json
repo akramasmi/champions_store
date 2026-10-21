@@ -83,7 +83,7 @@
       "oldPrice": null,
       "description": "شركة كيفين ليفروني\nبوزن 300g\nيعادل 60 حصة",
       "badge": "الأكثر مبيعاً",
-      "image": "./images/product-3-1792527892305.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-3-1792527892305.webp"
     },
     {
       "id": 2,
@@ -93,7 +93,7 @@
       "oldPrice": null,
       "description": "من شركة ابلايد نوتريشن\nبوزن 250g\nعدد الحصص 50\nبعدة نكهات منها: تفاح ،توت وفريز",
       "badge": "الأكثر مبيعاً",
-      "image": "./images/product-4-1792527897047.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-4-1792527897047.webp"
     },
     {
       "id": 3,
@@ -103,7 +103,7 @@
       "oldPrice": null,
       "description": "من شركة اوبتيموم نوتيريشن",
       "badge": null,
-      "image": "./images/product-5-1792527900352.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-5-1792527900352.webp"
     },
     {
       "id": 4,
@@ -113,7 +113,7 @@
       "oldPrice": null,
       "description": "من شركة مسل تك\nبوزن 400g\nعدد الحصص: 80",
       "badge": "مميز",
-      "image": "./images/product-6-1792527903572.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-6-1792527903572.webp"
     },
     {
       "id": 5,
@@ -123,7 +123,7 @@
       "oldPrice": null,
       "description": "",
       "badge": "الأكثر مبيعاً",
-      "image": "./images/product-7-1792527907287.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-7-1792527907287.webp"
     },
     {
       "id": 6,
@@ -133,7 +133,7 @@
       "oldPrice": null,
       "description": "",
       "badge": "مميز",
-      "image": "./images/product-8-1792527910455.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-8-1792527910455.webp"
     },
     {
       "id": 7,
@@ -143,7 +143,7 @@
       "oldPrice": null,
       "description": "",
       "badge": null,
-      "image": "./images/product-9-1792527914108.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-9-1792527914108.webp"
     },
     {
       "id": 8,
@@ -153,7 +153,7 @@
       "oldPrice": null,
       "description": "",
       "badge": null,
-      "image": "./images/product-10-1792527917402.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-10-1792527917402.webp"
     },
     {
       "id": 9,
@@ -163,7 +163,7 @@
       "oldPrice": null,
       "description": "",
       "badge": "مميز",
-      "image": "./images/product-11-1792527920779.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-11-1792527920779.webp"
     },
     {
       "id": 10,
@@ -173,7 +173,7 @@
       "oldPrice": null,
       "description": "",
       "badge": null,
-      "image": "./images/product-12-1792527924428.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-12-1792527924428.webp"
     },
     {
       "id": 11,
@@ -183,7 +183,7 @@
       "oldPrice": null,
       "description": "",
       "badge": null,
-      "image": "./images/product-13-1792527928097.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-13-1792527928097.webp"
     },
     {
       "id": 12,
@@ -193,7 +193,7 @@
       "oldPrice": null,
       "description": "",
       "badge": null,
-      "image": "./images/product-14-1792527931646.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-14-1792527931646.webp"
     },
     {
       "id": 13,
@@ -203,7 +203,7 @@
       "oldPrice": null,
       "description": "",
       "badge": null,
-      "image": "./images/product-15-1792527935291.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-15-1792527935291.webp"
     },
     {
       "id": 14,
@@ -213,7 +213,7 @@
       "oldPrice": null,
       "description": "",
       "badge": "مميز",
-      "image": "./images/product-16-1792527939285.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-16-1792527939285.webp"
     },
     {
       "id": 15,
@@ -223,7 +223,7 @@
       "oldPrice": null,
       "description": "",
       "badge": null,
-      "image": "./images/product-17-1792527943044.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-17-1792527943044.webp"
     },
     {
       "id": 16,
@@ -233,7 +233,7 @@
       "oldPrice": null,
       "description": "",
       "badge": null,
-      "image": "./images/product-18-1792527946732.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-18-1792527946732.webp"
     },
     {
       "id": 17,
@@ -243,7 +243,7 @@
       "oldPrice": null,
       "description": "بري وورك أوت من شركة أبلايد نوتريشن ب30 جرعة",
       "badge": null,
-      "image": "./images/product-19-1792527950525.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-19-1792527950525.webp"
     },
     {
       "id": 18,
@@ -253,7 +253,7 @@
       "oldPrice": null,
       "description": "فوائد مكمل السيترولين:\n\nزيادة الضخ العضلي وتحسين التروية الدموية أثناء التمارين\n\nتقليل تراكم الفضلات السامة مثل الأمونيا لتأخير الإجهاد\n\nرفع القدرة على التحمل وأداء التكرارات المكثفة\n\nتسريع التعافي وتقليل آلام العضلات اللاحقة",
       "badge": null,
-      "image": "./images/product-20-1792527954098.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-20-1792527954098.webp"
     },
     {
       "id": 19,
@@ -263,7 +263,7 @@
       "oldPrice": null,
       "description": "محفز لهرمون النمو",
       "badge": null,
-      "image": "./images/product-21-1792527958554.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-21-1792527958554.webp"
     },
     {
       "id": 20,
@@ -273,7 +273,7 @@
       "oldPrice": null,
       "description": "محفز ابتنائي طبيعي من شركة نوتريكس يساعد على:\nزيادة تخليق البروتين\nفي العضلات.\nدعم نمو عضلات صافية \nوكثيفة.\nتعزيز صلابة العضلات ومظهرها الجاف.\nتسريع التعافي العضلي بعد التمارين الشاقة.\nزيادة القوة البدنية وتوليد طاقة أفضل للتدريب.",
       "badge": null,
-      "image": "./images/product-22-1792527963572.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-22-1792527963572.webp"
     },
     {
       "id": 21,
@@ -283,7 +283,7 @@
       "oldPrice": null,
       "description": "",
       "badge": null,
-      "image": "./images/product-23-1792527967017.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-23-1792527967017.webp"
     },
     {
       "id": 22,
@@ -293,7 +293,7 @@
       "oldPrice": null,
       "description": "كارب من شركة ابلايد نوتريشن \nبوزن 1kg\n33 جرعة",
       "badge": null,
-      "image": "./images/product-24-1792527970975.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-24-1792527970975.webp"
     },
     {
       "id": 23,
@@ -303,7 +303,7 @@
       "oldPrice": null,
       "description": "ماس غينر من شركة كيفن ليفروني \nبوزن 6kg",
       "badge": null,
-      "image": "./images/product-25-1792527975345.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-25-1792527975345.webp"
     },
     {
       "id": 24,
@@ -313,7 +313,7 @@
       "oldPrice": null,
       "description": "ماس غينر من شركة اوبتيموم\nبوزن 2.72kg",
       "badge": null,
-      "image": "./images/product-26-1792527978686.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-26-1792527978686.webp"
     },
     {
       "id": 25,
@@ -323,7 +323,7 @@
       "oldPrice": null,
       "description": "ماس غينر من شركة رول ون \nبوزن 5.15kg",
       "badge": null,
-      "image": "./images/product-27-1792527982035.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-27-1792527982035.webp"
     },
     {
       "id": 26,
@@ -333,7 +333,7 @@
       "oldPrice": null,
       "description": "ايزو بروتين من شركة كيفين ليفروني \nبوزن 2kg",
       "badge": null,
-      "image": "./images/product-28-1792527985444.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-28-1792527985444.webp"
     },
     {
       "id": 27,
@@ -343,7 +343,7 @@
       "oldPrice": null,
       "description": "ايزو بروتين من شركة hpi \nبوزن 2.2kg",
       "badge": null,
-      "image": "./images/product-29-1792527989034.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-29-1792527989034.webp"
     },
     {
       "id": 28,
@@ -353,7 +353,7 @@
       "oldPrice": null,
       "description": "ايزو برتين من شركة ابلايد \nبوزن 1.8kg",
       "badge": null,
-      "image": "./images/product-30-1792527993048.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-30-1792527993048.webp"
     },
     {
       "id": 29,
@@ -363,7 +363,7 @@
       "oldPrice": null,
       "description": "ايزو برتين من شركة يافا لابس \nبوزن 2kg",
       "badge": null,
-      "image": "./images/product-31-1792527996328.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-31-1792527996328.webp"
     },
     {
       "id": 30,
@@ -373,7 +373,7 @@
       "oldPrice": null,
       "description": "واي بروتين من شركة ليفروني \nبوزن 2kg",
       "badge": null,
-      "image": "./images/product-32-1792528000170.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-32-1792528000170.webp"
     },
     {
       "id": 31,
@@ -383,7 +383,7 @@
       "oldPrice": null,
       "description": "الوزن 2kg",
       "badge": null,
-      "image": "./images/product-33-1792528003724.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-33-1792528003724.webp"
     },
     {
       "id": 32,
@@ -393,7 +393,7 @@
       "oldPrice": null,
       "description": "الوزن 2.24kg",
       "badge": null,
-      "image": "./images/product-34-1792528007297.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-34-1792528007297.webp"
     },
     {
       "id": 33,
@@ -403,7 +403,7 @@
       "oldPrice": null,
       "description": "واي بروتين من ابلايد نوتريشن \nبوزن 2kg",
       "badge": null,
-      "image": "./images/product-35-1792528011208.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-35-1792528011208.webp"
     },
     {
       "id": 34,
@@ -413,7 +413,7 @@
       "oldPrice": null,
       "description": "واي بروتين من شركة hpi\nبوزن 1.85kg",
       "badge": null,
-      "image": "./images/product-36-1792528015667.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-36-1792528015667.webp"
     },
     {
       "id": 35,
@@ -423,7 +423,7 @@
       "oldPrice": null,
       "description": "واي برتين من شركة مسل تك \nبوزن 2.28kg",
       "badge": null,
-      "image": "./images/product-37-1792528019826.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-37-1792528019826.webp"
     },
     {
       "id": 36,
@@ -433,7 +433,7 @@
       "oldPrice": null,
       "description": "واي بروتين من شركة مسل تك \nبوزن 1.81kg",
       "badge": null,
-      "image": "./images/product-38-1792528023425.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-38-1792528023425.webp"
     },
     {
       "id": 37,
@@ -443,7 +443,7 @@
       "oldPrice": null,
       "description": "واي بروتين بنكهة Reese's\nبوزن 2.65kg",
       "badge": null,
-      "image": "./images/product-39-1792528027345.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-39-1792528027345.webp"
     },
     {
       "id": 38,
@@ -453,7 +453,7 @@
       "oldPrice": null,
       "description": "واي بروتين من شركة اوليمب\nبوزن 1.8kg",
       "badge": null,
-      "image": "./images/product-40-1792528030902.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-40-1792528030902.webp"
     },
     {
       "id": 39,
@@ -463,7 +463,7 @@
       "oldPrice": null,
       "description": "غلوتامين من شركة ابلايد \nبوزن 250g",
       "badge": null,
-      "image": "./images/product-41-1792528034494.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-41-1792528034494.webp"
     },
     {
       "id": 40,
@@ -473,7 +473,7 @@
       "oldPrice": null,
       "description": "90 كبسولة",
       "badge": null,
-      "image": "./images/product-42-1792528037315.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-42-1792528037315.webp"
     },
     {
       "id": 41,
@@ -483,7 +483,7 @@
       "oldPrice": null,
       "description": "اشوا جندا من شركة بايوتك\n60 جرعة",
       "badge": null,
-      "image": "./images/product-43-1792528040538.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-43-1792528040538.webp"
     },
     {
       "id": 42,
@@ -493,7 +493,7 @@
       "oldPrice": null,
       "description": "",
       "badge": null,
-      "image": "./images/product-44-1792528043609.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-44-1792528043609.webp"
     },
     {
       "id": 43,
@@ -503,7 +503,7 @@
       "oldPrice": null,
       "description": "وزن 300g",
       "badge": null,
-      "image": "./images/product-45-1792528047011.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-45-1792528047011.webp"
     },
     {
       "id": 44,
@@ -513,7 +513,7 @@
       "oldPrice": null,
       "description": "500g",
       "badge": null,
-      "image": "./images/product-46-1792528050471.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-46-1792528050471.webp"
     },
     {
       "id": 45,
@@ -523,7 +523,7 @@
       "oldPrice": null,
       "description": "",
       "badge": null,
-      "image": "./images/product-47-1792528054047.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-47-1792528054047.webp"
     },
     {
       "id": 46,
@@ -533,7 +533,7 @@
       "oldPrice": null,
       "description": "300g",
       "badge": null,
-      "image": "./images/product-48-1792528057806.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-48-1792528057806.webp"
     },
     {
       "id": 47,
@@ -543,7 +543,7 @@
       "oldPrice": null,
       "description": "300g",
       "badge": null,
-      "image": "./images/product-49-1792528061834.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-49-1792528061834.webp"
     },
     {
       "id": 48,
@@ -553,7 +553,7 @@
       "oldPrice": null,
       "description": "600g",
       "badge": null,
-      "image": "./images/product-50-1792528065256.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-50-1792528065256.webp"
     },
     {
       "id": 49,
@@ -563,7 +563,7 @@
       "oldPrice": null,
       "description": "300g",
       "badge": null,
-      "image": "./images/product-51-1792528068756.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-51-1792528068756.webp"
     },
     {
       "id": 50,
@@ -573,7 +573,7 @@
       "oldPrice": null,
       "description": "500g",
       "badge": null,
-      "image": "./images/product-52-1792528072175.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-52-1792528072175.webp"
     },
     {
       "id": 51,
@@ -583,7 +583,7 @@
       "oldPrice": null,
       "description": "300g",
       "badge": null,
-      "image": "./images/product-51-1792557640211.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-51-1792557640211.webp"
     },
     {
       "id": 52,
@@ -593,7 +593,7 @@
       "oldPrice": null,
       "description": "600g",
       "badge": null,
-      "image": "./images/product-52-1792557642966.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-52-1792557642966.webp"
     },
     {
       "id": 53,
@@ -603,7 +603,7 @@
       "oldPrice": null,
       "description": "300g",
       "badge": null,
-      "image": "./images/product-53-1792557645473.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-53-1792557645473.webp"
     },
     {
       "id": 54,
@@ -613,7 +613,7 @@
       "oldPrice": null,
       "description": "1kg",
       "badge": null,
-      "image": "./images/product-54-1792557647822.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-54-1792557647822.webp"
     },
     {
       "id": 55,
@@ -623,7 +623,7 @@
       "oldPrice": null,
       "description": "300g",
       "badge": null,
-      "image": "./images/product-55-1792557650713.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-55-1792557650713.webp"
     },
     {
       "id": 56,
@@ -633,7 +633,7 @@
       "oldPrice": null,
       "description": "300g",
       "badge": null,
-      "image": "./images/product-56-1792557653223.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-56-1792557653223.webp"
     },
     {
       "id": 57,
@@ -643,7 +643,7 @@
       "oldPrice": null,
       "description": "435g",
       "badge": null,
-      "image": "./images/product-57-1792557655533.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-57-1792557655533.webp"
     },
     {
       "id": 58,
@@ -653,7 +653,7 @@
       "oldPrice": null,
       "description": "1.8kg",
       "badge": null,
-      "image": "./images/product-58-1792557658069.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-58-1792557658069.webp"
     },
     {
       "id": 59,
@@ -663,7 +663,7 @@
       "oldPrice": null,
       "description": "2kg",
       "badge": null,
-      "image": "./images/product-59-1792557660442.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-59-1792557660442.webp"
     },
     {
       "id": 60,
@@ -673,7 +673,7 @@
       "oldPrice": null,
       "description": "2kg",
       "badge": null,
-      "image": "./images/product-60-1792557662689.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-60-1792557662689.webp"
     },
     {
       "id": 61,
@@ -683,7 +683,7 @@
       "oldPrice": null,
       "description": "6kg",
       "badge": null,
-      "image": "./images/product-61-1792557665193.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-61-1792557665193.webp"
     },
     {
       "id": 62,
@@ -693,7 +693,7 @@
       "oldPrice": null,
       "description": "3kg",
       "badge": null,
-      "image": "./images/product-62-1792557667821.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-62-1792557667821.webp"
     },
     {
       "id": 63,
@@ -703,7 +703,7 @@
       "oldPrice": null,
       "description": "1.8kg نسخة مدعمة بالارغنين",
       "badge": null,
-      "image": "./images/product-63-1792557670241.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-63-1792557670241.webp"
     },
     {
       "id": 64,
@@ -713,7 +713,7 @@
       "oldPrice": null,
       "description": "2kg",
       "badge": null,
-      "image": "./images/product-64-1792557672784.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-64-1792557672784.webp"
     },
     {
       "id": 65,
@@ -723,7 +723,7 @@
       "oldPrice": null,
       "description": "2.3kg",
       "badge": null,
-      "image": "./images/product-65-1792557675210.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-65-1792557675210.webp"
     },
     {
       "id": 66,
@@ -733,7 +733,7 @@
       "oldPrice": null,
       "description": "الوزن 2.3KG",
       "badge": null,
-      "image": "./images/product-66-1792557677698.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-66-1792557677698.webp"
     },
     {
       "id": 67,
@@ -743,7 +743,7 @@
       "oldPrice": null,
       "description": "واي بروتين من ماسيل تيك مع حوارق دهون بوزن 1.81KG",
       "badge": null,
-      "image": "./images/product-67-1792557680114.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-67-1792557680114.webp"
     },
     {
       "id": 68,
@@ -753,7 +753,7 @@
       "oldPrice": null,
       "description": "2KG",
       "badge": null,
-      "image": "./images/product-68-1792557682613.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-68-1792557682613.webp"
     },
     {
       "id": 69,
@@ -763,7 +763,7 @@
       "oldPrice": null,
       "description": "واي بروتين نسخة بريميوم بنكهة الكوكيز بوزن 2KG",
       "badge": null,
-      "image": "./images/product-69-1792557684831.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-69-1792557684831.webp"
     },
     {
       "id": 70,
@@ -773,7 +773,7 @@
       "oldPrice": null,
       "description": "1KG",
       "badge": null,
-      "image": "./images/product-70-1792557687160.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-70-1792557687160.webp"
     },
     {
       "id": 71,
@@ -783,7 +783,7 @@
       "oldPrice": null,
       "description": "1KG",
       "badge": null,
-      "image": "./images/product-71-1792557689601.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-71-1792557689601.webp"
     },
     {
       "id": 72,
@@ -793,7 +793,7 @@
       "oldPrice": null,
       "description": "700g",
       "badge": null,
-      "image": "./images/product-72-1792557692082.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-72-1792557692082.webp"
     },
     {
       "id": 73,
@@ -803,7 +803,7 @@
       "oldPrice": null,
       "description": "الوحش الغني  عن التعريف الغولد ستاندرد من شركة اوبتيموم بوزن 2.3kg",
       "badge": null,
-      "image": "./images/product-73-1792557695087.webp"
+      "image": "https://champions-store.championherostore.workers.dev/images/product-73-1792557695087.webp"
     }
   ],
   "about": {
