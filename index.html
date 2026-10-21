@@ -43,7 +43,7 @@
             <p class="hero-desc">أفضل الماركات العالمية بأسعار منافسة وجودة مضمونة</p>
             <div class="hero-buttons">
                 <a href="#products" class="btn btn-primary">تصفح المنتجات</a>
-                <a href="https://wa.me/963900000000" target="_blank" class="btn btn-outline">تواصل معنا</a>
+                <a href="https://wa.me/963900000000" target="_blank" class="btn btn-outline" id="heroWhatsappBtn">تواصل معنا</a>
             </div>
         </div>
     </section>
@@ -59,12 +59,25 @@
             </div>
             <div class="category-filters" id="categoryFilters"></div>
             
-            <!-- ✅ مكان عرض وصف الفئة الجديد -->
+            <!-- ✅ وصف الفئة يظهر هنا تلقائياً -->
             <div class="category-description" id="categoryDescription" style="display:none;">
                 <div class="category-desc-content">
                     <h3 id="categoryDescTitle"></h3>
                     <p id="categoryDescText"></p>
                     <button class="category-desc-close" onclick="closeCategoryDescription()">✕</button>
+                </div>
+            </div>
+            
+            <!-- ✅ شريط الفرز الجديد -->
+            <div class="sort-bar">
+                <div class="sort-label">🔽 ترتيب حسب:</div>
+                <div class="sort-options">
+                    <button class="sort-btn active" data-sort="default">الافتراضي</button>
+                    <button class="sort-btn" data-sort="name-asc">الاسم (أ-ي)</button>
+                    <button class="sort-btn" data-sort="name-desc">الاسم (ي-أ)</button>
+                    <button class="sort-btn" data-sort="price-asc">السعر ↑</button>
+                    <button class="sort-btn" data-sort="price-desc">السعر ↓</button>
+                    <button class="sort-btn" data-sort="brand">الشركة</button>
                 </div>
             </div>
         </div>
@@ -109,22 +122,8 @@
                 <h2 class="section-title">تواصل <span class="gold">معنا</span></h2>
                 <p class="section-subtitle">نحن هنا لمساعدتك</p>
             </div>
-            <div class="contact-grid">
-                <a href="https://wa.me/963900000000" target="_blank" class="contact-card">
-                    <div class="contact-icon">💬</div>
-                    <h3>واتساب</h3>
-                    <p>للطلب والاستفسار</p>
-                </a>
-                <a href="https://instagram.com/champions_store" target="_blank" class="contact-card">
-                    <div class="contact-icon">📸</div>
-                    <h3>إنستغرام</h3>
-                    <p>تابعنا للعروض</p>
-                </a>
-                <div class="contact-card">
-                    <div class="contact-icon">📍</div>
-                    <h3>موقعنا</h3>
-                    <p>دمشق - سوريا</p>
-                </div>
+            <div class="contact-grid" id="contactGrid">
+                <!-- يتم توليده ديناميكياً من products.json -->
             </div>
         </div>
     </section>
@@ -135,7 +134,7 @@
                 <div class="footer-brand">
                     <img src="logo.png" alt="Champions Store" class="footer-logo" loading="lazy">
                     <h3>Champions <span class="gold">Store</span></h3>
-                    <p>مكملات غذائية فاخرة</p>
+                    <p id="footerDescription">مكملات غذائية فاخرة</p>
                 </div>
                 <div class="footer-links">
                     <h4>روابط سريعة</h4>
@@ -146,14 +145,12 @@
                         <li><a href="#contact">تواصل</a></li>
                     </ul>
                 </div>
-                <div class="footer-contact">
-                    <h4>تواصل</h4>
-                    <p>📱 واتساب: +963900000000</p>
-                    <p>📍 دمشق، سوريا</p>
+                <div class="footer-contact" id="footerContact">
+                    <!-- يتم توليده ديناميكياً -->
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>© 2026 Champions Store</p>
+                <p id="footerCopyright">© 2026 Champions Store</p>
             </div>
         </div>
     </footer>
@@ -182,7 +179,7 @@
         </div>
     </div>
 
-    <a href="https://wa.me/963900000000" target="_blank" class="floating-whatsapp">💬</a>
+    <a href="https://wa.me/963900000000" target="_blank" class="floating-whatsapp" id="floatingWhatsapp">💬</a>
 
     <script src="script.js"></script>
 </body>
