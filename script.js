@@ -1,27 +1,222 @@
 const STORAGE_KEY = 'championsStoreData';
 let storeData = null;
 let allProducts = [];
+let filteredProducts = [];
 let currentCategory = 'all';
 let searchQuery = '';
 let cart = JSON.parse(localStorage.getItem('championsCart')) || [];
 
+const CHUNK_SIZE = 12;
+let currentChunk = 0;
+let isRendering = false;
+
+// ✅ دالة مساعدة لمعالجة روابط الصور
+function normalizeImageUrl(imagePath) {
+    if (!imagePath) return './images/placeholder.webp';
+    
+    // إذا كانت Base64
+    if (imagePath.startsWith('data:image')) {
+        return './images/placeholder.webp';
+    }
+    
+    // إذا كانت رابط raw.githubusercontent.com (بطيء)
+    if (imagePath.includes('raw.githubusercontent.com')) {
+        // استخراج اسم الملف من الرابط
+        const fileName = imagePath.split('/').pop();
+        return `./images/${fileName}`;
+    }
+    
+    // إذا كانت رابط نسبي يبدأ بـ ./images/
+    if (imagePath.startsWith('./images/')) {
+        return imagePath;
+    }
+    
+    // إذا كانت رابط مطلق يبدأ بـ /images/
+    if (imagePath.startsWith('/images/')) {
+        return imagePath;
+    }
+    
+    // إذا كانت رابط خارجي (https://)
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return imagePath;
+    }
+    
+    // أي حالة أخرى، نعتبرها اسم ملف في مجلد images/
+    return `./images/${imagePath}`;
+}
+
 async function init() {
     try {
-        const response = await fetch('products.json?v=' + Date.now());
+        const grid = document.getElementById('productGrid');
+        grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gold);">⏳ جاري تحميل المنتجات...</div>';
+        
+        // ✅ إضافة cache buster قوي
+        const response = await fetch('products.json?t=' + Date.now(), {
+            cache: 'no-store'
+        });
+        
         if (!response.ok) throw new Error('فشل في تحميل المنتجات');
-        storeData = await response.json();
-        allProducts = storeData.products || [];
+        
+        const data = await response.json();
+        
+        // التحقق من صحة البيانات
+        if (!data || !data.products || !Array.isArray(data.products)) {
+            throw new Error('بيانات المنتجات غير صحيحة');
+        }
+        
+        storeData = data;
+        allProducts = data.products || [];
+        filteredProducts = [...allProducts];
+        
+        console.log(`✅ تم تحميل ${allProducts.length} منتج`);
         
         updateSiteContent();
         renderCategories();
-        renderProducts();
+        currentChunk = 0;
+        renderChunk();
         updateCartUI();
         setupEventListeners();
+        setupLazyLoading();
+        
     } catch (error) {
-        console.error('خطأ:', error);
-        document.getElementById('productGrid').innerHTML = 
-            '<div style="text-align:center;padding:40px;color:red;"><h3>خطأ في تحميل المنتجات</h3></div>';
+        console.error('❌ خطأ في التحميل:', error);
+        document.getElementById('productGrid').innerHTML = `
+            <div style="text-align:center;padding:40px;color:var(--danger);">
+                <h3>❌ خطأ في تحميل المنتجات</h3>
+                <p style="margin-top:10px;color:var(--text-secondary);">${error.message}</p>
+                <button onclick="location.reload()" style="margin-top:20px;padding:10px 20px;background:var(--gold);color:var(--primary);border:none;border-radius:8px;cursor:pointer;font-weight:600;">
+                    🔄 إعادة المحاولة
+                </button>
+            </div>
+        `;
     }
+}
+
+function renderChunk() {
+    if (isRendering) return;
+    isRendering = true;
+    
+    const grid = document.getElementById('productGrid');
+    const noResults = document.getElementById('noResults');
+    
+    if (currentChunk === 0) {
+        grid.innerHTML = '';
+    }
+    
+    const start = currentChunk * CHUNK_SIZE;
+    const end = start + CHUNK_SIZE;
+    const chunkProducts = filteredProducts.slice(start, end);
+    
+    if (filteredProducts.length === 0) {
+        if (noResults) noResults.style.display = 'block';
+        isRendering = false;
+        return;
+    }
+    
+    if (noResults) noResults.style.display = 'none';
+    
+    if (chunkProducts.length === 0) {
+        isRendering = false;
+        return;
+    }
+    
+    const html = chunkProducts.map(product => {
+        const category = storeData.categories.find(c => c.id === product.category);
+        const badgeClass = product.badge === 'خصم' ? 'sale' : '';
+        
+        // ✅ معالجة الصورة بشكل آمن
+        const imageSrc = normalizeImageUrl(product.image);
+        
+        return `<div class="product-card">
+            ${product.badge ? `<span class="product-badge ${badgeClass}">${product.badge}</span>` : ''}
+            <div class="product-image-wrapper">
+                <img src="${imageSrc}" 
+                     alt="${product.name}" 
+                     class="product-image" 
+                     loading="lazy" 
+                     decoding="async"
+                     onerror="handleImageError(this, '${product.id}')"
+                     onclick="showProductDetails(${product.id})">
+            </div>
+            <div class="product-info">
+                <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
+                <div class="product-name-price">
+                    <h3 class="product-name" onclick="showProductDetails(${product.id})">${product.name}</h3>
+                    <div class="product-price">
+                        <span class="current-price">${product.price}$</span>
+                        ${product.oldPrice ? `<span class="old-price">${product.oldPrice}$</span>` : ''}
+                    </div>
+                </div>
+                <div class="product-actions">
+                    <button class="add-to-cart-btn" onclick="addToCart(${product.id}, this)">🛒 أضف</button>
+                    <button class="view-btn" onclick="showProductDetails(${product.id})">👁️</button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+    
+    grid.insertAdjacentHTML('beforeend', html);
+    
+    currentChunk++;
+    isRendering = false;
+}
+
+// ✅ معالجة أخطاء الصور بشكل ذكي
+function handleImageError(img, productId) {
+    console.warn(`⚠️ فشل تحميل صورة المنتج ID: ${productId}`);
+    
+    // منع التكرار
+    if (img.dataset.errorHandled) return;
+    img.dataset.errorHandled = 'true';
+    
+    // محاولة استخدام placeholder
+    const placeholder = './images/placeholder.webp';
+    if (img.src !== placeholder) {
+        img.src = placeholder;
+    } else {
+        // إذا فشل الـ placeholder أيضاً، استخدم placeholder خارجي
+        img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="500"%3E%3Crect fill="%231c1c1e" width="400" height="500"/%3E%3Ctext fill="%23c8a25d" font-family="Arial" font-size="20" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3ENo Image%3C/text%3E%3C/svg%3E';
+    }
+    
+    img.onerror = null;
+}
+
+function resetAndRender() {
+    currentChunk = 0;
+    document.getElementById('productGrid').innerHTML = '';
+    renderChunk();
+}
+
+function setupLazyLoading() {
+    const grid = document.getElementById('productGrid');
+    let sentinel = document.getElementById('scroll-sentinel');
+    
+    if (!sentinel) {
+        sentinel = document.createElement('div');
+        sentinel.id = 'scroll-sentinel';
+        sentinel.style.cssText = 'height:40px;width:100%;display:flex;justify-content:center;align-items:center;margin-top:20px;';
+        grid.appendChild(sentinel);
+    }
+    
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !isRendering) {
+            const totalDisplayed = currentChunk * CHUNK_SIZE;
+            if (totalDisplayed < filteredProducts.length) {
+                if ('requestIdleCallback' in window) {
+                    requestIdleCallback(() => renderChunk());
+                } else {
+                    setTimeout(() => renderChunk(), 100);
+                }
+            } else {
+                sentinel.innerHTML = '<p style="color:var(--text-secondary);font-size:0.9rem;padding:20px;">✅ تم عرض جميع المنتجات</p>';
+                observer.disconnect();
+            }
+        }
+    }, {
+        rootMargin: '400px'
+    });
+    
+    observer.observe(sentinel);
 }
 
 function updateSiteContent() {
@@ -51,8 +246,12 @@ function updateSiteContent() {
     }
 
     if (info.logo) {
+        const logoUrl = normalizeImageUrl(info.logo);
         document.querySelectorAll('.nav-logo, .about-image img, .footer-logo').forEach(img => {
-            img.src = info.logo;
+            img.src = logoUrl;
+            img.onerror = function() {
+                this.src = 'logo.png';
+            };
         });
     }
 
@@ -81,64 +280,6 @@ function renderCategories() {
     ).join('');
 }
 
-// ===== عرض جميع المنتجات دفعة واحدة =====
-function renderProducts() {
-    const grid = document.getElementById('productGrid');
-    const noResults = document.getElementById('noResults');
-    if (!grid) return;
-
-    let filtered = allProducts;
-    
-    if (currentCategory !== 'all') {
-        filtered = filtered.filter(p => p.category === currentCategory);
-    }
-    
-    if (searchQuery) {
-        filtered = filtered.filter(p => 
-            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
-        );
-    }
-
-    if (filtered.length === 0) {
-        grid.innerHTML = '';
-        if (noResults) noResults.style.display = 'block';
-        return;
-    }
-    
-    if (noResults) noResults.style.display = 'none';
-
-    // بناء HTML لجميع المنتجات
-    const html = filtered.map(product => {
-        const category = storeData.categories.find(c => c.id === product.category);
-        const badgeClass = product.badge === 'خصم' ? 'sale' : '';
-        return `<div class="product-card">
-            ${product.badge ? `<span class="product-badge ${badgeClass}">${product.badge}</span>` : ''}
-            <div class="product-image-wrapper">
-                <img src="${product.image}" alt="${product.name}" class="product-image" 
-                     loading="lazy" decoding="async"
-                     onclick="showProductDetails(${product.id})">
-            </div>
-            <div class="product-info">
-                <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
-                <div class="product-name-price">
-                    <h3 class="product-name" onclick="showProductDetails(${product.id})">${product.name}</h3>
-                    <div class="product-price">
-                        <span class="current-price">${product.price}$</span>
-                        ${product.oldPrice ? `<span class="old-price">${product.oldPrice}$</span>` : ''}
-                    </div>
-                </div>
-                <div class="product-actions">
-                    <button class="add-to-cart-btn" onclick="addToCart(${product.id}, this)">🛒 أضف</button>
-                    <button class="view-btn" onclick="showProductDetails(${product.id})">👁️</button>
-                </div>
-            </div>
-        </div>`;
-    }).join('');
-
-    grid.innerHTML = html;
-}
-
 function showProductDetails(productId) {
     const product = allProducts.find(p => p.id === productId);
     if (!product) return;
@@ -146,8 +287,13 @@ function showProductDetails(productId) {
     const modal = document.getElementById('productModal');
     const details = document.getElementById('productDetails');
 
+    const imageSrc = normalizeImageUrl(product.image);
+
     details.innerHTML = `
-        <img src="${product.image}" alt="${product.name}" class="product-detail-image">
+        <img src="${imageSrc}" 
+             alt="${product.name}" 
+             class="product-detail-image"
+             onerror="this.src='./images/placeholder.webp'">
         <div class="product-detail-info">
             <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
             <h2>${product.name}</h2>
@@ -224,9 +370,14 @@ function renderCartItems() {
         if (footer) footer.style.display = 'none';
         return;
     }
-    container.innerHTML = cart.map(item => `
+    container.innerHTML = cart.map(item => {
+        const imageSrc = normalizeImageUrl(item.image);
+        return `
         <div class="cart-item">
-            <img src="${item.image}" alt="${item.name}" loading="lazy">
+            <img src="${imageSrc}" 
+                 alt="${item.name}" 
+                 loading="lazy"
+                 onerror="this.src='./images/placeholder.webp'">
             <div class="cart-item-info">
                 <div class="cart-item-name">${item.name}</div>
                 <div class="cart-item-price">${item.price}$</div>
@@ -238,7 +389,7 @@ function renderCartItems() {
             </div>
             <button class="remove-btn" onclick="removeFromCart(${item.id})">حذف</button>
         </div>
-    `).join('');
+    `;}).join('');
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const totalEl = document.getElementById('totalPrice');
     if (totalEl) totalEl.textContent = total.toFixed(2) + '$';
@@ -294,16 +445,33 @@ function setupEventListeners() {
                 document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
                 e.target.classList.add('active');
                 currentCategory = e.target.dataset.category;
-                renderProducts();
+                
+                if (currentCategory === 'all') {
+                    filteredProducts = [...allProducts];
+                } else {
+                    filteredProducts = allProducts.filter(p => p.category === currentCategory);
+                }
+                
+                resetAndRender();
             }
         });
     }
     
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
+        let searchTimeout;
         searchInput.addEventListener('input', (e) => {
-            searchQuery = e.target.value;
-            renderProducts();
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchQuery = e.target.value.toLowerCase();
+                
+                filteredProducts = allProducts.filter(p => 
+                    p.name.toLowerCase().includes(searchQuery) ||
+                    (p.description && p.description.toLowerCase().includes(searchQuery))
+                );
+                
+                resetAndRender();
+            }, 300);
         });
     }
     
