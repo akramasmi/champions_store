@@ -6,7 +6,6 @@ const DEFAULT_PASSWORD = btoa('admin123');
 let storeData = null;
 let editingProductId = null;
 
-// ===== تسجيل الدخول =====
 function checkPassword() {
     const input = document.getElementById('passwordInput').value;
     const saved = localStorage.getItem(PASSWORD_KEY) || DEFAULT_PASSWORD;
@@ -28,7 +27,6 @@ function logout() {
     document.getElementById('loginScreen').style.display = 'flex';
 }
 
-// ===== تحميل البيانات =====
 async function loadData() {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -73,7 +71,6 @@ function renderAll() {
     renderLogoPreview();
 }
 
-// ===== التبويبات =====
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -83,7 +80,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
-// ✅ الحل الجذري: استخدام data-id بدلاً من onclick مع Base64
 function renderProducts() {
     const container = document.getElementById('productsTable');
     if (!container || !storeData || !storeData.products) return;
@@ -93,7 +89,6 @@ function renderProducts() {
     
     storeData.products.forEach(p => {
         const cat = categories.find(c => c.id === p.category);
-        // استخدام صورة placeholder بدلاً من Base64 في الجدول
         const displayImage = p.image && p.image.startsWith('data:') 
             ? 'https://via.placeholder.com/60x60/1c1c1e/c8a25d?text=IMG' 
             : p.image;
@@ -112,7 +107,6 @@ function renderProducts() {
     
     container.innerHTML = html;
     
-    // إضافة event listeners للأزرار
     container.querySelectorAll('[data-action="edit"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = parseInt(e.currentTarget.dataset.id);
@@ -164,20 +158,15 @@ function editProduct(id) {
     editingProductId = id;
     document.getElementById('modalTitle').textContent = 'تعديل منتج';
     
-    // ملء الحقول
     document.getElementById('productName').value = p.name;
     document.getElementById('productPrice').value = p.price;
     document.getElementById('productOldPrice').value = p.oldPrice || '';
     document.getElementById('productDescription').value = p.description || '';
     document.getElementById('productBadge').value = p.badge || '';
     
-    // إنشاء قائمة الفئات
     renderCategorySelect();
-    
-    // تعيين الفئة المحددة
     document.getElementById('productCategory').value = p.category;
     
-    // معالجة الصورة
     if (p.image && p.image.startsWith('data:')) {
         document.getElementById('imagePreview').src = p.image;
         document.getElementById('imagePreview').style.display = 'block';
@@ -229,7 +218,7 @@ function saveProduct() {
     if (preview.style.display !== 'none' && preview.src && !preview.src.includes(window.location.href)) {
         image = preview.src;
     }
-    if (!image) image = 'https://via.placeholder.com/400x400/1c1c1e/c8a25d?text=No+Image';
+    if (!image) image = './images/placeholder.webp';
     
     if (editingProductId) {
         const p = storeData.products.find(x => x.id === editingProductId);
@@ -262,7 +251,6 @@ function saveProduct() {
     showToast(editingProductId ? 'تم التحديث ✓' : 'تمت الإضافة ✓');
 }
 
-// ===== الفئات =====
 function renderCategoriesAdmin() {
     const list = document.getElementById('categoriesList');
     if (!list || !storeData || !storeData.categories) return;
@@ -278,7 +266,6 @@ function renderCategoriesAdmin() {
     html += '</ul>';
     list.innerHTML = html;
     
-    // إضافة event listeners
     list.querySelectorAll('[data-action="delete-cat"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = e.currentTarget.dataset.id;
@@ -312,7 +299,6 @@ function deleteCategory(id) {
     renderCategoriesAdmin();
 }
 
-// ===== معلومات المتجر =====
 function renderStoreInfo() {
     if (!storeData || !storeData.storeInfo) return;
     const info = storeData.storeInfo;
@@ -334,7 +320,6 @@ function saveStoreInfo() {
     showToast('تم الحفظ ✓ (لا تنسَ الضغط على "نشر فوري")');
 }
 
-// ===== من نحن =====
 function renderAboutInfo() {
     if (!storeData) return;
     if (!storeData.about) {
@@ -358,7 +343,6 @@ function saveAboutInfo() {
     showToast('تم حفظ "من نحن" ✓');
 }
 
-// ===== اللوغو =====
 function renderLogoPreview() {
     const preview = document.getElementById('logoPreview');
     if (storeData && storeData.storeInfo && storeData.storeInfo.logo) {
@@ -395,7 +379,6 @@ function saveLogo() {
     showToast('تم حفظ اللوغو ✓');
 }
 
-// ===== كلمة المرور =====
 function changePassword() {
     const current = document.getElementById('currentPassword').value;
     const newPass = document.getElementById('newPassword').value;
@@ -413,7 +396,6 @@ function changePassword() {
     showToast('تم تغيير كلمة المرور ✓');
 }
 
-// ===== تصدير واستيراد =====
 function exportData() {
     if (!storeData) return showToast('لا توجد بيانات', 'error');
     const dataStr = JSON.stringify(storeData, null, 2);
@@ -450,7 +432,26 @@ function importData(event) {
     event.target.value = '';
 }
 
-// ===== GitHub =====
+function reorganizeIds() {
+    if (!storeData || !storeData.products) {
+        showToast('لا توجد منتجات', 'error');
+        return;
+    }
+    
+    if (!confirm('⚠️ سيتم إعادة ترقيم جميع المنتجات من 1 بالتسلسل.\n\nهذا سيغير IDs المنتجات الحالية.\n\nهل أنت متأكد؟')) {
+        return;
+    }
+    
+    storeData.products.forEach((product, index) => {
+        product.id = index + 1;
+    });
+    
+    saveToLocalStorage();
+    renderProducts();
+    
+    showToast(`✅ تم إعادة تهيئة ${storeData.products.length} منتج (IDs: 1-${storeData.products.length})`);
+}
+
 function saveGitHubConfig() {
     const config = {
         username: document.getElementById('githubUsername').value.trim(),
@@ -476,7 +477,6 @@ function loadGitHubConfig() {
     }
 }
 
-// ===== النشر الفوري =====
 async function publishDirectly() {
     const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
     if (!config || !config.token) {
@@ -530,7 +530,45 @@ async function publishDirectly() {
     }
 }
 
-// ===== تحويل الصور =====
+// ===== تصحيح روابط الصور =====
+function fixAllImageUrls() {
+    if (!storeData || !storeData.products) {
+        showToast('لا توجد منتجات', 'error');
+        return;
+    }
+    
+    let fixedCount = 0;
+    
+    storeData.products.forEach(product => {
+        if (!product.image) return;
+        
+        if (product.image.startsWith('http://') || product.image.startsWith('https://')) {
+            let fileName = product.image.split('/').pop().split('?')[0];
+            
+            if (!fileName.includes('.')) {
+                fileName = fileName + '.webp';
+            }
+            
+            product.image = './images/' + fileName;
+            fixedCount++;
+        }
+    });
+    
+    if (storeData.storeInfo && storeData.storeInfo.logo) {
+        if (storeData.storeInfo.logo.startsWith('http://') || storeData.storeInfo.logo.startsWith('https://')) {
+            let fileName = storeData.storeInfo.logo.split('/').pop().split('?')[0];
+            if (!fileName.includes('.')) fileName = fileName + '.webp';
+            storeData.storeInfo.logo = './images/' + fileName;
+            fixedCount++;
+        }
+    }
+    
+    saveToLocalStorage();
+    renderProducts();
+    
+    showToast(`✅ تم تصحيح ${fixedCount} رابط`);
+}
+
 function showConvertModal() {
     const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
     if (!config || !config.token) {
@@ -641,7 +679,7 @@ async function convertAllImagesToWebP() {
                 const compressedFile = await imageCompression(blob, options);
                 const compressedSize = compressedFile.size;
                 
-                const fileName = `product-${product.id}-${Date.now()}.webp`;
+                const fileName = `${product.id}.webp`;
                 
                 const reader = new FileReader();
                 const webpBase64 = await new Promise((resolve, reject) => {
@@ -650,7 +688,7 @@ async function convertAllImagesToWebP() {
                     reader.readAsDataURL(compressedFile);
                 });
                 
-                const uploadResponse = await fetch(`${baseUrl}/contents/imgs/${fileName}`, {
+                const uploadResponse = await fetch(`${baseUrl}/contents/images/${fileName}`, {
                     method: 'PUT',
                     headers,
                     body: JSON.stringify({
@@ -661,11 +699,11 @@ async function convertAllImagesToWebP() {
                 });
                 
                 if (!uploadResponse.ok) {
-                    throw new Error('فشل رفع الصورة');
+                    const errorData = await uploadResponse.json();
+                    throw new Error(errorData.message || 'فشل رفع الصورة');
                 }
                 
-                const imageUrl = `https://raw.githubusercontent.com/${config.username}/${config.repo}/main/imgs/${fileName}`;
-                product.image = imageUrl;
+                product.image = `./images/${fileName}`;
                 
                 totalSizeSaved += (originalSize - compressedSize);
                 convertedCount++;
@@ -684,7 +722,7 @@ async function convertAllImagesToWebP() {
             progressText.textContent = 'حذف الصور القديمة من JSON...';
             storeData.products.forEach(p => {
                 if (p.image && p.image.startsWith('data:image')) {
-                    p.image = 'https://via.placeholder.com/400x400/1c1c1e/c8a25d?text=No+Image';
+                    p.image = './images/placeholder.webp';
                 }
             });
         }
@@ -698,7 +736,8 @@ async function convertAllImagesToWebP() {
             <div class="progress-title">✅ تم بنجاح!</div>
             <div class="progress-text">
                 تم تحويل ${convertedCount} صورة بنجاح<br>
-                <strong style="color: var(--success);">توفير: ${(totalSizeSaved / 1024 / 1024).toFixed(2)} MB</strong>
+                <strong style="color: var(--success);">توفير: ${(totalSizeSaved / 1024 / 1024).toFixed(2)} MB</strong><br>
+                <small style="color: var(--text-secondary);">الصور محفوظة في مجلد images/</small>
             </div>
             <button class="btn-save" onclick="this.parentElement.remove()" style="margin-top: 20px; width: 100%;">حسناً</button>
         `;
@@ -720,28 +759,7 @@ async function base64ToBlob(base64String) {
     const response = await fetch(base64String);
     return await response.blob();
 }
-// ===== إعادة تهيئة IDs =====
-function reorganizeIds() {
-    if (!storeData || !storeData.products) {
-        showToast('لا توجد منتجات', 'error');
-        return;
-    }
-    
-    if (!confirm('⚠️ سيتم إعادة ترقيم جميع المنتجات من 1 بالتسلسل.\n\nهذا سيغير IDs المنتجات الحالية.\n\nهل أنت متأكد؟')) {
-        return;
-    }
-    
-    // إعادة ترقيم المنتجات
-    storeData.products.forEach((product, index) => {
-        product.id = index + 1;
-    });
-    
-    saveToLocalStorage();
-    renderProducts();
-    
-    showToast(`✅ تم إعادة تهيئة ${storeData.products.length} منتج (IDs: 1-${storeData.products.length})`);
-}
-// ===== الإشعارات =====
+
 function showToast(msg, type = 'success') {
     const t = document.getElementById('toast');
     if (!t) return;
@@ -751,7 +769,6 @@ function showToast(msg, type = 'success') {
     setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// ===== مستمعي الأحداث =====
 document.addEventListener('click', (e) => {
     if (e.target.dataset && e.target.dataset.tab === 'github') {
         setTimeout(loadGitHubConfig, 100);
