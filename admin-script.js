@@ -218,7 +218,7 @@ function saveProduct() {
     if (preview.style.display !== 'none' && preview.src && !preview.src.includes(window.location.href)) {
         image = preview.src;
     }
-    if (!image) image = './images/placeholder.webp';
+    if (!image) image = 'images/placeholder.webp';
     
     if (editingProductId) {
         const p = storeData.products.find(x => x.id === editingProductId);
@@ -530,14 +530,13 @@ async function publishDirectly() {
     }
 }
 
-// ===== تصحيح روابط الصور - نسخة محسّنة =====
+// ===== تصحيح روابط الصور - نسخة نهائية =====
 function fixAllImageUrls() {
     if (!storeData || !storeData.products) {
         showToast('لا توجد منتجات', 'error');
         return;
     }
     
-    const origin = window.location.origin;
     let fixedCount = 0;
     let alreadyLocal = 0;
     const report = [];
@@ -548,28 +547,24 @@ function fixAllImageUrls() {
             return;
         }
         
-        // Base64 - لا تلمسه
         if (product.image.startsWith('data:')) {
-            report.push(`ℹ️ المنتج ${product.id}: صورة Base64 (تحتاج تحويل)`);
+            report.push(`ℹ️ المنتج ${product.id}: صورة Base64`);
             return;
         }
         
-        // استخراج اسم الملف
         let fileName = product.image;
         if (product.image.includes('/')) {
             fileName = product.image.split('/').pop().split('?')[0];
         }
         
-        // إضافة امتداد إذا لم يكن موجوداً
         if (!fileName.includes('.')) {
             fileName = fileName + '.webp';
         }
         
-        // ✅ رابط مطلق كامل
-        const newUrl = `${origin}/images/${fileName}`;
+        const newUrl = `images/${fileName}`;
         
         if (product.image !== newUrl) {
-            report.push(`✅ المنتج ${product.id}: ${product.image.substring(0, 50)}... → ${fileName}`);
+            report.push(`✅ المنتج ${product.id}: ${fileName}`);
             product.image = newUrl;
             fixedCount++;
         } else {
@@ -577,38 +572,37 @@ function fixAllImageUrls() {
         }
     });
     
-    // تصحيح اللوغو أيضاً
     if (storeData.storeInfo && storeData.storeInfo.logo) {
         const logo = storeData.storeInfo.logo;
         if (!logo.startsWith('data:')) {
             let logoName = logo.includes('/') ? logo.split('/').pop().split('?')[0] : logo;
             if (!logoName.includes('.')) logoName = logoName + '.png';
-            storeData.storeInfo.logo = `${origin}/images/${logoName}`;
+            storeData.storeInfo.logo = `images/${logoName}`;
         }
     }
     
     saveToLocalStorage();
     renderProducts();
     
-    // عرض تقرير مفصل
     const reportText = `📊 تقرير تصحيح الروابط:\n\n` +
         `✅ تم تصحيح: ${fixedCount}\n` +
         `ℹ️ موجودة مسبقاً: ${alreadyLocal}\n\n` +
-        `📝 التفاصيل:\n${report.join('\n')}`;
+        `📝 التفاصيل:\n${report.join('\n')}\n\n` +
+        `⚠️ مهم: تأكد من وجود الملفات في مجلد images/ على GitHub!`;
     
     console.log(reportText);
-    alert(reportText + '\n\n💡 راجع Console (F12) للتفاصيل الكاملة');
+    alert(reportText);
     showToast(`✅ تم تصحيح ${fixedCount} رابط`);
 }
 
-// ===== فحص روابط الصور فعلياً =====
+// ===== فحص روابط الصور فعلياً - نسخة محسّنة =====
 async function testAllImageUrls() {
     if (!storeData || !storeData.products) {
         showToast('لا توجد منتجات', 'error');
         return;
     }
     
-    showToast('🔍 جاري فحص الروابط...');
+    showToast('🔍 جاري فحص الروابط... (قد يستغرق دقيقة)');
     
     const results = {
         ok: [],
@@ -616,8 +610,28 @@ async function testAllImageUrls() {
         base64: []
     };
     
-    // فحص أول 20 منتج فقط
     const productsToTest = storeData.products.slice(0, 20);
+    
+    function testImage(url) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            const timeout = setTimeout(() => {
+                resolve({ success: false, error: 'timeout' });
+            }, 5000);
+            
+            img.onload = () => {
+                clearTimeout(timeout);
+                resolve({ success: true });
+            };
+            
+            img.onerror = () => {
+                clearTimeout(timeout);
+                resolve({ success: false, error: 'not found' });
+            };
+            
+            img.src = url;
+        });
+    }
     
     for (const product of productsToTest) {
         if (!product.image) continue;
@@ -627,31 +641,19 @@ async function testAllImageUrls() {
             continue;
         }
         
-        try {
-            const response = await fetch(product.image, { 
-                method: 'HEAD',
-                cache: 'no-store'
-            });
-            
-            if (response.ok) {
-                results.ok.push({ product, url: product.image });
-            } else {
-                results.failed.push({ 
-                    product, 
-                    url: product.image, 
-                    status: response.status 
-                });
-            }
-        } catch (e) {
+        const result = await testImage(product.image);
+        
+        if (result.success) {
+            results.ok.push({ product, url: product.image });
+        } else {
             results.failed.push({ 
                 product, 
                 url: product.image, 
-                error: e.message 
+                error: result.error 
             });
         }
     }
     
-    // عرض التقرير
     let report = `📊 تقرير فحص الصور (${productsToTest.length} منتج):\n\n`;
     report += `✅ ناجحة: ${results.ok.length}\n`;
     report += `❌ فاشلة: ${results.failed.length}\n`;
@@ -660,9 +662,15 @@ async function testAllImageUrls() {
     if (results.failed.length > 0) {
         report += `❌ الروابط الفاشلة:\n`;
         results.failed.forEach(item => {
-            report += `\n• ${item.product.name}\n  الرابط: ${item.url}\n`;
-            report += `  السبب: ${item.status || item.error}\n`;
+            report += `\n• ${item.product.name} (ID: ${item.product.id})\n`;
+            report += `  الرابط: ${item.url}\n`;
+            report += `  السبب: ${item.error}\n`;
         });
+        
+        report += `\n\n💡 الحلول الممكنة:\n`;
+        report += `1. تأكد من وجود الملفات في مجلد images/ على GitHub\n`;
+        report += `2. تأكد من أن أسماء الملفات مطابقة تماماً\n`;
+        report += `3. استخدم "تحويل الصور" لرفع الصور من جديد\n`;
     }
     
     if (results.base64.length > 0) {
@@ -673,7 +681,7 @@ async function testAllImageUrls() {
     }
     
     console.log(report);
-    alert(report.substring(0, 2000) + '\n\n💡 راجع Console (F12) للتقرير الكامل');
+    alert(report.substring(0, 3000));
 }
 
 function showConvertModal() {
@@ -810,8 +818,7 @@ async function convertAllImagesToWebP() {
                     throw new Error(errorData.message || 'فشل رفع الصورة');
                 }
                 
-                const origin = window.location.origin;
-                product.image = `${origin}/images/${fileName}`;
+                product.image = `images/${fileName}`;
                 
                 totalSizeSaved += (originalSize - compressedSize);
                 convertedCount++;
@@ -830,7 +837,7 @@ async function convertAllImagesToWebP() {
             progressText.textContent = 'حذف الصور القديمة من JSON...';
             storeData.products.forEach(p => {
                 if (p.image && p.image.startsWith('data:image')) {
-                    p.image = PLACEHOLDER_IMAGE || './images/placeholder.webp';
+                    p.image = PLACEHOLDER_IMAGE || 'images/placeholder.webp';
                 }
             });
         }
