@@ -20,9 +20,9 @@ async function init() {
     try {
         const grid = document.getElementById('productGrid');
         
-        // ✅ دائرة تحميل بدلاً من النص
+        // ✅ دائرة تحميل أولية
         grid.innerHTML = `
-            <div style="grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; padding: 60px 0;">
+            <div id="initial-loader" style="grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; padding: 60px 0;">
                 <div class="loading-spinner"></div>
             </div>
         `;
@@ -44,6 +44,10 @@ async function init() {
         
         updateSiteContent();
         renderCategories();
+        
+        // ✅ حذف الدائرة الأولية قبل إنشاء sentinel
+        const initialLoader = document.getElementById('initial-loader');
+        if (initialLoader) initialLoader.remove();
         
         // بدء التحميل التدريجي
         currentChunk = 0;
