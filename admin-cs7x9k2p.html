@@ -115,7 +115,6 @@
                 </div>
             </section>
 
-            <!-- تبويب الأدوات الجديد -->
             <section class="tab-content" id="toolsTab">
                 <h2>🛠️ أدوات الإدارة</h2>
                 <div class="tools-grid">
@@ -153,6 +152,13 @@
                         <h3>تحويل الصور</h3>
                         <p>تحويل Base64 إلى WebP</p>
                         <button class="btn-save" onclick="showConvertModal()">تحويل الصور</button>
+                    </div>
+
+                    <div class="tool-card">
+                        <div class="tool-icon">🔗</div>
+                        <h3>تصحيح روابط الصور</h3>
+                        <p>تحويل الروابط الخارجية إلى محلية</p>
+                        <button class="btn-save" onclick="fixAllImageUrls()">تصحيح الروابط</button>
                     </div>
 
                     <div class="tool-card">
@@ -244,7 +250,7 @@
                 <div class="info-box">
                     <strong>💡 ما الذي سيحدث؟</strong><br>
                     • تحويل صور Base64 إلى WebP (أصغر 70-80%)<br>
-                    • رفع الصور إلى مجلد <code>imgs</code> على GitHub<br>
+                    • رفع الصور إلى مجلد <code>images</code> على GitHub<br>
                     • تحديث روابط الصور في products.json<br>
                     • حذف الصور القديمة من JSON
                 </div>
