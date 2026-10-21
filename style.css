@@ -72,7 +72,7 @@ h1, h2, h3, h4 {
     color: var(--white);
 }
 
-/* Buttons */
+/* ===== Buttons ===== */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -115,7 +115,7 @@ h1, h2, h3, h4 {
 
 .btn-full { width: 100%; }
 
-/* Navbar */
+/* ===== Navbar ===== */
 .navbar {
     background: rgba(10, 10, 12, 0.95);
     backdrop-filter: blur(10px);
@@ -245,7 +245,7 @@ h1, h2, h3, h4 {
     cursor: pointer;
 }
 
-/* Hero */
+/* ===== Hero ===== */
 .hero {
     background: var(--gradient-dark);
     color: var(--white);
@@ -299,7 +299,7 @@ h1, h2, h3, h4 {
     flex-wrap: wrap;
 }
 
-/* Sections */
+/* ===== Sections ===== */
 .section-header {
     text-align: center;
     margin-bottom: 48px;
@@ -318,7 +318,7 @@ h1, h2, h3, h4 {
     margin: 0 auto;
 }
 
-/* Filters */
+/* ===== Filters ===== */
 .filters-section {
     background: var(--bg-elevated);
     padding: 80px 0 40px;
@@ -374,7 +374,7 @@ h1, h2, h3, h4 {
     border-color: var(--gold);
 }
 
-/* Products */
+/* ===== Products ===== */
 .products-section {
     padding: 80px 0;
 }
@@ -384,6 +384,7 @@ h1, h2, h3, h4 {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 24px;
 }
+
 .product-card {
     background: rgba(44, 44, 46, 0.6);
     backdrop-filter: blur(20px);
@@ -393,7 +394,8 @@ h1, h2, h3, h4 {
     transition: all var(--transition-slow);
     border: 1px solid rgba(200, 162, 93, 0.15);
     position: relative;
-    /* ✅ إزالة content-visibility و contain-intrinsic-size */
+    contain: layout style paint;
+    will-change: transform;
 }
 
 .product-card::before {
@@ -575,7 +577,30 @@ h1, h2, h3, h4 {
     color: var(--text-secondary);
 }
 
-/* About */
+/* ===== Loading Spinner ===== */
+#scroll-sentinel {
+    height: 60px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(200, 162, 93, 0.2);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== About ===== */
 .about-section {
     background: var(--bg-elevated);
     padding: 100px 0;
@@ -632,7 +657,7 @@ h1, h2, h3, h4 {
     border: 4px solid var(--gold);
 }
 
-/* Contact */
+/* ===== Contact ===== */
 .contact-section {
     padding: 100px 0;
 }
@@ -679,7 +704,7 @@ h1, h2, h3, h4 {
     font-size: 0.95rem;
 }
 
-/* Footer */
+/* ===== Footer ===== */
 .footer {
     background: var(--primary);
     padding: 60px 0 24px;
@@ -750,7 +775,7 @@ h1, h2, h3, h4 {
     font-size: 0.9rem;
 }
 
-/* Modal */
+/* ===== Modal ===== */
 .modal {
     display: none;
     position: fixed;
@@ -926,7 +951,7 @@ h1, h2, h3, h4 {
     margin-bottom: 20px;
 }
 
-/* Floating WhatsApp */
+/* ===== Floating WhatsApp ===== */
 .floating-whatsapp {
     position: fixed;
     bottom: 24px;
@@ -950,7 +975,7 @@ h1, h2, h3, h4 {
     transform: scale(1.1);
 }
 
-/* Scrollbar */
+/* ===== Scrollbar ===== */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb {
@@ -963,7 +988,7 @@ h1, h2, h3, h4 {
     color: var(--primary);
 }
 
-/* MOBILE */
+/* ===== MOBILE ===== */
 @media (max-width: 768px) {
     .container { padding: 0 20px; }
     
