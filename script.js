@@ -10,56 +10,19 @@ const CHUNK_SIZE = 12;
 let currentChunk = 0;
 let isRendering = false;
 
-// ✅ دالة مساعدة لمعالجة روابط الصور
-function normalizeImageUrl(imagePath) {
-    if (!imagePath) return './images/placeholder.webp';
-    
-    // إذا كانت Base64
-    if (imagePath.startsWith('data:image')) {
-        return './images/placeholder.webp';
-    }
-    
-    // إذا كانت رابط raw.githubusercontent.com (بطيء)
-    if (imagePath.includes('raw.githubusercontent.com')) {
-        // استخراج اسم الملف من الرابط
-        const fileName = imagePath.split('/').pop();
-        return `./images/${fileName}`;
-    }
-    
-    // إذا كانت رابط نسبي يبدأ بـ ./images/
-    if (imagePath.startsWith('./images/')) {
-        return imagePath;
-    }
-    
-    // إذا كانت رابط مطلق يبدأ بـ /images/
-    if (imagePath.startsWith('/images/')) {
-        return imagePath;
-    }
-    
-    // إذا كانت رابط خارجي (https://)
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        return imagePath;
-    }
-    
-    // أي حالة أخرى، نعتبرها اسم ملف في مجلد images/
-    return `./images/${imagePath}`;
-}
+// ✅ placeholder مدمج (SVG) - يعمل دائماً
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="500"%3E%3Crect fill="%231c1c1e" width="400" height="500"/%3E%3Ctext fill="%23c8a25d" font-family="Arial" font-size="24" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3ENo Image%3C/text%3E%3C/svg%3E';
 
 async function init() {
     try {
         const grid = document.getElementById('productGrid');
         grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gold);">⏳ جاري تحميل المنتجات...</div>';
         
-        // ✅ إضافة cache buster قوي
-        const response = await fetch('products.json?t=' + Date.now(), {
-            cache: 'no-store'
-        });
-        
+        const response = await fetch('products.json?t=' + Date.now());
         if (!response.ok) throw new Error('فشل في تحميل المنتجات');
         
         const data = await response.json();
         
-        // التحقق من صحة البيانات
         if (!data || !data.products || !Array.isArray(data.products)) {
             throw new Error('بيانات المنتجات غير صحيحة');
         }
@@ -124,8 +87,8 @@ function renderChunk() {
         const category = storeData.categories.find(c => c.id === product.category);
         const badgeClass = product.badge === 'خصم' ? 'sale' : '';
         
-        // ✅ معالجة الصورة بشكل آمن
-        const imageSrc = normalizeImageUrl(product.image);
+        // ✅ استخدام الصورة كما هي، مع placeholder احتياطي
+        const imageSrc = product.image || PLACEHOLDER_IMAGE;
         
         return `<div class="product-card">
             ${product.badge ? `<span class="product-badge ${badgeClass}">${product.badge}</span>` : ''}
@@ -135,7 +98,7 @@ function renderChunk() {
                      class="product-image" 
                      loading="lazy" 
                      decoding="async"
-                     onerror="handleImageError(this, '${product.id}')"
+                     onerror="this.src='${PLACEHOLDER_IMAGE}'"
                      onclick="showProductDetails(${product.id})">
             </div>
             <div class="product-info">
@@ -159,26 +122,6 @@ function renderChunk() {
     
     currentChunk++;
     isRendering = false;
-}
-
-// ✅ معالجة أخطاء الصور بشكل ذكي
-function handleImageError(img, productId) {
-    console.warn(`⚠️ فشل تحميل صورة المنتج ID: ${productId}`);
-    
-    // منع التكرار
-    if (img.dataset.errorHandled) return;
-    img.dataset.errorHandled = 'true';
-    
-    // محاولة استخدام placeholder
-    const placeholder = './images/placeholder.webp';
-    if (img.src !== placeholder) {
-        img.src = placeholder;
-    } else {
-        // إذا فشل الـ placeholder أيضاً، استخدم placeholder خارجي
-        img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="500"%3E%3Crect fill="%231c1c1e" width="400" height="500"/%3E%3Ctext fill="%23c8a25d" font-family="Arial" font-size="20" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3ENo Image%3C/text%3E%3C/svg%3E';
-    }
-    
-    img.onerror = null;
 }
 
 function resetAndRender() {
@@ -246,9 +189,8 @@ function updateSiteContent() {
     }
 
     if (info.logo) {
-        const logoUrl = normalizeImageUrl(info.logo);
         document.querySelectorAll('.nav-logo, .about-image img, .footer-logo').forEach(img => {
-            img.src = logoUrl;
+            img.src = info.logo;
             img.onerror = function() {
                 this.src = 'logo.png';
             };
@@ -287,13 +229,13 @@ function showProductDetails(productId) {
     const modal = document.getElementById('productModal');
     const details = document.getElementById('productDetails');
 
-    const imageSrc = normalizeImageUrl(product.image);
+    const imageSrc = product.image || PLACEHOLDER_IMAGE;
 
     details.innerHTML = `
         <img src="${imageSrc}" 
              alt="${product.name}" 
              class="product-detail-image"
-             onerror="this.src='./images/placeholder.webp'">
+             onerror="this.src='${PLACEHOLDER_IMAGE}'">
         <div class="product-detail-info">
             <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
             <h2>${product.name}</h2>
@@ -370,14 +312,12 @@ function renderCartItems() {
         if (footer) footer.style.display = 'none';
         return;
     }
-    container.innerHTML = cart.map(item => {
-        const imageSrc = normalizeImageUrl(item.image);
-        return `
+    container.innerHTML = cart.map(item => `
         <div class="cart-item">
-            <img src="${imageSrc}" 
+            <img src="${item.image || PLACEHOLDER_IMAGE}" 
                  alt="${item.name}" 
                  loading="lazy"
-                 onerror="this.src='./images/placeholder.webp'">
+                 onerror="this.src='${PLACEHOLDER_IMAGE}'">
             <div class="cart-item-info">
                 <div class="cart-item-name">${item.name}</div>
                 <div class="cart-item-price">${item.price}$</div>
@@ -389,7 +329,7 @@ function renderCartItems() {
             </div>
             <button class="remove-btn" onclick="removeFromCart(${item.id})">حذف</button>
         </div>
-    `;}).join('');
+    `).join('');
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const totalEl = document.getElementById('totalPrice');
     if (totalEl) totalEl.textContent = total.toFixed(2) + '$';
