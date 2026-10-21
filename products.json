@@ -89,7 +89,10 @@
       "oldPrice": null,
       "description": "شركة كيفين ليفروني\nبوزن 300g\nيعادل 60 حصة",
       "badge": "الأكثر مبيعاً",
-      "image": "images/product-3-1792527892305.webp"
+      "image": "images/product-3-1792527892305.webp",
+      "brand": "Golden levrone",
+      "weight": "300g",
+      "servings": 60
     },
     {
       "id": 2,
