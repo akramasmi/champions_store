@@ -6,21 +6,58 @@ let currentCategory = 'all';
 let searchQuery = '';
 let cart = JSON.parse(localStorage.getItem('championsCart')) || [];
 
-// إعدادات التحميل التدريجي
 const CHUNK_SIZE = 12;
 let currentChunk = 0;
 let isRendering = false;
 let scrollObserver = null;
 let sentinelElement = null;
 
-// placeholder مدمج
-const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="500"%3E%3Crect fill="%231c1c1e" width="400" height="500"/%3E%3Ctext fill="%23c8a25d" font-family="Arial" font-size="24" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3ENo Image%3C/text%3E%3C/svg%3E';
+// ✅ placeholder مدمج (لا يحتاج إنترنت)
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCBmaWxsPSIjMWMxYzFlIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIvPjx0ZXh0IGZpbGw9IiNjOGEyNWQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgeD0iNTAlIiB5PSI1MCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+
+// ✅ تحويل أي رابط خارجي إلى محلي
+function getImageUrl(imagePath) {
+    if (!imagePath) return PLACEHOLDER_IMAGE;
+    
+    // Base64 - اتركه كما هو
+    if (imagePath.startsWith('data:')) return imagePath;
+    
+    // روابط raw.githubusercontent.com - حوّلها إلى محلية
+    if (imagePath.includes('raw.githubusercontent.com')) {
+        const fileName = imagePath.split('/').pop();
+        return './images/' + fileName;
+    }
+    
+    // روابط GitHub الأخرى
+    if (imagePath.includes('github.com') || imagePath.includes('githubusercontent')) {
+        const fileName = imagePath.split('/').pop();
+        return './images/' + fileName;
+    }
+    
+    // placeholder خارجي - استبدله بالمدمج
+    if (imagePath.includes('placeholder.com') || imagePath.includes('via.placeholder')) {
+        return PLACEHOLDER_IMAGE;
+    }
+    
+    // روابط محلية - اتركها كما هي
+    if (imagePath.startsWith('./') || imagePath.startsWith('/') || imagePath.startsWith('images/')) {
+        return imagePath;
+    }
+    
+    // أي رابط خارجي آخر
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        const fileName = imagePath.split('/').pop().split('?')[0];
+        return './images/' + fileName;
+    }
+    
+    // اسم ملف عادي
+    return './images/' + imagePath;
+}
 
 async function init() {
     try {
         const grid = document.getElementById('productGrid');
         
-        // ✅ دائرة تحميل أولية
         grid.innerHTML = `
             <div id="initial-loader" style="grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; padding: 60px 0;">
                 <div class="loading-spinner"></div>
@@ -45,11 +82,9 @@ async function init() {
         updateSiteContent();
         renderCategories();
         
-        // ✅ حذف الدائرة الأولية قبل إنشاء sentinel
         const initialLoader = document.getElementById('initial-loader');
         if (initialLoader) initialLoader.remove();
         
-        // بدء التحميل التدريجي
         currentChunk = 0;
         createSentinel();
         renderNextChunk();
@@ -72,24 +107,17 @@ async function init() {
     }
 }
 
-// ✅ إنشاء عنصر sentinel
 function createSentinel() {
     const grid = document.getElementById('productGrid');
-    
-    // حذف sentinel القديم إن وجد
     const oldSentinel = document.getElementById('scroll-sentinel');
     if (oldSentinel) oldSentinel.remove();
     
-    // إنشاء sentinel جديد
     sentinelElement = document.createElement('div');
     sentinelElement.id = 'scroll-sentinel';
     sentinelElement.style.cssText = 'height:60px;width:100%;display:flex;justify-content:center;align-items:center;margin-top:20px;';
     grid.appendChild(sentinelElement);
-    
-    console.log('✅ تم إنشاء sentinel');
 }
 
-// ✅ عرض الدفعة التالية
 function renderNextChunk() {
     if (isRendering) return;
     isRendering = true;
@@ -97,14 +125,12 @@ function renderNextChunk() {
     const grid = document.getElementById('productGrid');
     const noResults = document.getElementById('noResults');
     
-    // حساب الحدود
     const start = currentChunk * CHUNK_SIZE;
     const end = start + CHUNK_SIZE;
     const chunkProducts = filteredProducts.slice(start, end);
     
-    console.log(`📦 الدفعة ${currentChunk + 1}: منتجات ${start + 1} إلى ${Math.min(end, filteredProducts.length)} من ${filteredProducts.length}`);
+    console.log(`📦 الدفعة ${currentChunk + 1}: ${start + 1}-${Math.min(end, filteredProducts.length)} من ${filteredProducts.length}`);
     
-    // لا توجد منتجات
     if (filteredProducts.length === 0) {
         grid.innerHTML = '';
         if (noResults) noResults.style.display = 'block';
@@ -115,28 +141,22 @@ function renderNextChunk() {
     
     if (noResults) noResults.style.display = 'none';
     
-    // انتهت جميع المنتجات
     if (chunkProducts.length === 0) {
-        // ✅ إخفاء sentinel فقط بدون رسالة
-        if (sentinelElement) {
-            sentinelElement.style.display = 'none';
-        }
+        if (sentinelElement) sentinelElement.style.display = 'none';
         isRendering = false;
         console.log('✅ تم عرض جميع المنتجات');
         return;
     }
     
-    // ✅ عرض مؤشر التحميل (spinner)
     if (sentinelElement) {
         sentinelElement.style.display = 'flex';
         sentinelElement.innerHTML = '<div class="loading-spinner"></div>';
     }
     
-    // بناء HTML للدفعة الحالية
     const html = chunkProducts.map(product => {
         const category = storeData.categories.find(c => c.id === product.category);
         const badgeClass = product.badge === 'خصم' ? 'sale' : '';
-        const imageSrc = product.image || PLACEHOLDER_IMAGE;
+        const imageSrc = getImageUrl(product.image);
         
         return `<div class="product-card">
             ${product.badge ? `<span class="product-badge ${badgeClass}">${product.badge}</span>` : ''}
@@ -166,7 +186,6 @@ function renderNextChunk() {
         </div>`;
     }).join('');
     
-    // ✅ إضافة الدفعة الجديدة قبل sentinel
     if (sentinelElement) {
         sentinelElement.insertAdjacentHTML('beforebegin', html);
     } else {
@@ -176,76 +195,42 @@ function renderNextChunk() {
     currentChunk++;
     isRendering = false;
     
-    console.log(`✅ تم عرض الدفعة ${currentChunk}: ${chunkProducts.length} منتج (المجموع: ${Math.min(end, filteredProducts.length)}/${filteredProducts.length})`);
-    
-    // ✅ إذا انتهت جميع المنتجات، إخفاء sentinel بدون رسالة
     if (end >= filteredProducts.length && sentinelElement) {
         sentinelElement.style.display = 'none';
     }
 }
 
-// ✅ إعادة تعيين العرض
 function resetAndRender() {
-    console.log('🔄 إعادة تعيين العرض...');
-    
     currentChunk = 0;
     const grid = document.getElementById('productGrid');
-    
-    // ✅ مسح المنتجات فقط (بدون حذف sentinel)
     const cards = grid.querySelectorAll('.product-card');
     cards.forEach(card => card.remove());
     
-    // إعادة إنشاء sentinel
     createSentinel();
-    
-    // عرض الدفعة الأولى
     renderNextChunk();
-    
-    // إعادة تفعيل المراقب
     setupInfiniteScroll();
 }
 
-// ✅ إعداد التمرير اللانهائي
 function setupInfiniteScroll() {
-    // قطع المراقب القديم
-    if (scrollObserver) {
-        scrollObserver.disconnect();
-        console.log('🔌 تم قطع المراقب القديم');
-    }
+    if (scrollObserver) scrollObserver.disconnect();
+    if (!sentinelElement) return;
     
-    if (!sentinelElement) {
-        console.warn('⚠️ sentinel غير موجود!');
-        return;
-    }
-    
-    // إنشاء مراقب جديد
     scrollObserver = new IntersectionObserver((entries) => {
-        const entry = entries[0];
-        
-        if (entry.isIntersecting && !isRendering) {
-            console.log('👁️ sentinel مرئي - جاري تحميل الدفعة التالية...');
-            
+        if (entries[0].isIntersecting && !isRendering) {
             const totalDisplayed = currentChunk * CHUNK_SIZE;
-            
             if (totalDisplayed < filteredProducts.length) {
-                // استخدام requestIdleCallback للأداء
                 if ('requestIdleCallback' in window) {
                     requestIdleCallback(() => renderNextChunk());
                 } else {
                     setTimeout(() => renderNextChunk(), 100);
                 }
             } else {
-                console.log('✅ تم عرض جميع المنتجات - إيقاف المراقب');
                 scrollObserver.disconnect();
             }
         }
-    }, {
-        rootMargin: '300px'
-    });
+    }, { rootMargin: '300px' });
     
-    // مراقبة sentinel
     scrollObserver.observe(sentinelElement);
-    console.log('✅ تم تفعيل المراقب');
 }
 
 function updateSiteContent() {
@@ -275,11 +260,10 @@ function updateSiteContent() {
     }
 
     if (info.logo) {
+        const logoUrl = getImageUrl(info.logo);
         document.querySelectorAll('.nav-logo, .about-image img, .footer-logo').forEach(img => {
-            img.src = info.logo;
-            img.onerror = function() {
-                this.src = 'logo.png';
-            };
+            img.src = logoUrl;
+            img.onerror = function() { this.src = 'logo.png'; };
         });
     }
 
@@ -315,13 +299,10 @@ function showProductDetails(productId) {
     const modal = document.getElementById('productModal');
     const details = document.getElementById('productDetails');
 
-    const imageSrc = product.image || PLACEHOLDER_IMAGE;
+    const imageSrc = getImageUrl(product.image);
 
     details.innerHTML = `
-        <img src="${imageSrc}" 
-             alt="${product.name}" 
-             class="product-detail-image"
-             onerror="this.src='${PLACEHOLDER_IMAGE}'">
+        <img src="${imageSrc}" alt="${product.name}" class="product-detail-image" onerror="this.src='${PLACEHOLDER_IMAGE}'">
         <div class="product-detail-info">
             <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
             <h2>${product.name}</h2>
@@ -400,10 +381,7 @@ function renderCartItems() {
     }
     container.innerHTML = cart.map(item => `
         <div class="cart-item">
-            <img src="${item.image || PLACEHOLDER_IMAGE}" 
-                 alt="${item.name}" 
-                 loading="lazy"
-                 onerror="this.src='${PLACEHOLDER_IMAGE}'">
+            <img src="${getImageUrl(item.image)}" alt="${item.name}" loading="lazy" onerror="this.src='${PLACEHOLDER_IMAGE}'">
             <div class="cart-item-info">
                 <div class="cart-item-name">${item.name}</div>
                 <div class="cart-item-price">${item.price}$</div>
@@ -490,12 +468,10 @@ function setupEventListeners() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 searchQuery = e.target.value.toLowerCase();
-                
                 filteredProducts = allProducts.filter(p => 
                     p.name.toLowerCase().includes(searchQuery) ||
                     (p.description && p.description.toLowerCase().includes(searchQuery))
                 );
-                
                 resetAndRender();
             }, 300);
         });
