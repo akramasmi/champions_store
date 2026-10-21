@@ -12,89 +12,58 @@ let isRendering = false;
 let scrollObserver = null;
 let sentinelElement = null;
 
-// ✅ placeholder مدمج (SVG)
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCBmaWxsPSIjMWMxYzFlIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIvPjx0ZXh0IGZpbGw9IiNjOGEyNWQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgeD0iNTAlIiB5PSI1MCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
 
-// ✅ دالة تحويل الروابط - روابط نسبية بسيطة
+// ✅ دالة تحويل الروابط (نفس الحل من الـ admin)
 function getImageUrl(imagePath) {
     if (!imagePath) return PLACEHOLDER_IMAGE;
-    
-    // Base64 - اتركه كما هو
     if (imagePath.startsWith('data:')) return imagePath;
-    
-    // روابط خارجية محجوبة - حوّلها إلى محلية
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
         const fileName = imagePath.split('/').pop().split('?')[0];
         return `images/${fileName}`;
     }
-    
-    // روابط نسبية - وحّد الصيغة
     if (imagePath.startsWith('./images/') || imagePath.startsWith('/images/')) {
         return imagePath.replace('./', '').replace(/^\//, '');
     }
-    
     if (imagePath.startsWith('./imgs/') || imagePath.startsWith('/imgs/')) {
         return imagePath.replace('./', '').replace(/^\//, '');
     }
-    
     if (imagePath.startsWith('images/') || imagePath.startsWith('imgs/')) {
         return imagePath;
     }
-    
-    // أي نص آخر - افترض أنه اسم ملف
     return `images/${imagePath}`;
 }
 
-// ✅ نظام fallback ذكي عند فشل تحميل الصورة
 function handleImageError(img) {
     if (img.dataset.fallbackTried) {
         img.src = PLACEHOLDER_IMAGE;
         return;
     }
-    
     img.dataset.fallbackTried = '1';
     const currentSrc = img.src;
     
-    console.warn('⚠️ فشل تحميل:', currentSrc);
-    
-    // جرب 1: /images/ → /imgs/
     if (currentSrc.includes('/images/')) {
         img.src = currentSrc.replace('/images/', '/imgs/');
         return;
     }
-    
-    // جرب 2: /imgs/ → /images/
     if (currentSrc.includes('/imgs/')) {
         img.src = currentSrc.replace('/imgs/', '/images/');
         return;
     }
-    
-    // جرب 3: images/ → imgs/ (بدون /)
     if (currentSrc.includes('images/') && !currentSrc.includes('/images/')) {
         img.src = currentSrc.replace('images/', 'imgs/');
         return;
     }
-    
-    // جرب 4: .webp → .png
     if (currentSrc.endsWith('.webp')) {
         img.src = currentSrc.replace('.webp', '.png');
         return;
     }
-    
-    // جرب 5: .webp → .jpg
-    if (currentSrc.endsWith('.webp')) {
-        img.src = currentSrc.replace('.webp', '.jpg');
-        return;
-    }
-    
-    // كل المحاولات فشلت
     img.src = PLACEHOLDER_IMAGE;
 }
 
 async function init() {
     try {
         const grid = document.getElementById('productGrid');
-        
         grid.innerHTML = `
             <div id="initial-loader" style="grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; padding: 60px 0;">
                 <div class="loading-spinner"></div>
@@ -105,7 +74,6 @@ async function init() {
         if (!response.ok) throw new Error('فشل في تحميل المنتجات');
         
         const data = await response.json();
-        
         if (!data || !data.products || !Array.isArray(data.products)) {
             throw new Error('بيانات المنتجات غير صحيحة');
         }
@@ -113,14 +81,6 @@ async function init() {
         storeData = data;
         allProducts = data.products || [];
         filteredProducts = [...allProducts];
-        
-        console.log(`✅ تم تحميل ${allProducts.length} منتج`);
-        
-        // ✅ عرض أول 5 روابط للصور في Console للفحص
-        console.log('🔍 روابط الصور الأولى:');
-        allProducts.slice(0, 5).forEach(p => {
-            console.log(`  • ${p.name}: ${getImageUrl(p.image)}`);
-        });
         
         updateSiteContent();
         renderCategories();
@@ -137,7 +97,7 @@ async function init() {
         setupEventListeners();
         
     } catch (error) {
-        console.error('❌ خطأ في التحميل:', error);
+        console.error('❌ خطأ:', error);
         document.getElementById('productGrid').innerHTML = `
             <div style="text-align:center;padding:40px;color:var(--danger);">
                 <h3>❌ خطأ في تحميل المنتجات</h3>
@@ -159,6 +119,59 @@ function createSentinel() {
     sentinelElement.id = 'scroll-sentinel';
     sentinelElement.style.cssText = 'height:60px;width:100%;display:flex;justify-content:center;align-items:center;margin-top:20px;';
     grid.appendChild(sentinelElement);
+}
+
+// ✅ بناء بطاقة المنتج مع الخصائص الجديدة
+function buildProductCard(product) {
+    const category = storeData.categories.find(c => c.id === product.category);
+    const badgeClass = product.badge === 'خصم' ? 'sale' : '';
+    const imageSrc = getImageUrl(product.image);
+    
+    // ✅ بناء قسم الخصائص (meta)
+    let metaHtml = '';
+    const metaItems = [];
+    
+    if (product.brand) {
+        metaItems.push(`<span class="meta-item"><span class="meta-icon">🏢</span><span class="meta-value">${product.brand}</span></span>`);
+    }
+    if (product.weight) {
+        metaItems.push(`<span class="meta-item"><span class="meta-icon">⚖️</span><span class="meta-value">${product.weight}</span></span>`);
+    }
+    if (product.servings) {
+        metaItems.push(`<span class="meta-item"><span class="meta-icon">🥄</span><span class="meta-value">${product.servings} حصة</span></span>`);
+    }
+    
+    if (metaItems.length > 0) {
+        metaHtml = `<div class="product-meta">${metaItems.join('')}</div>`;
+    }
+    
+    return `<div class="product-card">
+        ${product.badge ? `<span class="product-badge ${badgeClass}">${product.badge}</span>` : ''}
+        <div class="product-image-wrapper">
+            <img src="${imageSrc}" 
+                 alt="${product.name}" 
+                 class="product-image" 
+                 loading="lazy" 
+                 decoding="async"
+                 onerror="handleImageError(this)"
+                 onclick="showProductDetails(${product.id})">
+        </div>
+        <div class="product-info">
+            <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
+            <div class="product-name-price">
+                <h3 class="product-name" onclick="showProductDetails(${product.id})">${product.name}</h3>
+                <div class="product-price">
+                    <span class="current-price">${product.price}$</span>
+                    ${product.oldPrice ? `<span class="old-price">${product.oldPrice}$</span>` : ''}
+                </div>
+            </div>
+            ${metaHtml}
+            <div class="product-actions">
+                <button class="add-to-cart-btn" onclick="addToCart(${product.id}, this)">🛒 أضف</button>
+                <button class="view-btn" onclick="showProductDetails(${product.id})">📋 تفاصيل</button>
+            </div>
+        </div>
+    </div>`;
 }
 
 function renderNextChunk() {
@@ -193,38 +206,7 @@ function renderNextChunk() {
         sentinelElement.innerHTML = '<div class="loading-spinner"></div>';
     }
     
-    const html = chunkProducts.map(product => {
-        const category = storeData.categories.find(c => c.id === product.category);
-        const badgeClass = product.badge === 'خصم' ? 'sale' : '';
-        const imageSrc = getImageUrl(product.image);
-        
-        return `<div class="product-card">
-            ${product.badge ? `<span class="product-badge ${badgeClass}">${product.badge}</span>` : ''}
-            <div class="product-image-wrapper">
-                <img src="${imageSrc}" 
-                     alt="${product.name}" 
-                     class="product-image" 
-                     loading="lazy" 
-                     decoding="async"
-                     onerror="handleImageError(this)"
-                     onclick="showProductDetails(${product.id})">
-            </div>
-            <div class="product-info">
-                <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
-                <div class="product-name-price">
-                    <h3 class="product-name" onclick="showProductDetails(${product.id})">${product.name}</h3>
-                    <div class="product-price">
-                        <span class="current-price">${product.price}$</span>
-                        ${product.oldPrice ? `<span class="old-price">${product.oldPrice}$</span>` : ''}
-                    </div>
-                </div>
-                <div class="product-actions">
-                    <button class="add-to-cart-btn" onclick="addToCart(${product.id}, this)">🛒 أضف</button>
-                    <button class="view-btn" onclick="showProductDetails(${product.id})">👁️</button>
-                </div>
-            </div>
-        </div>`;
-    }).join('');
+    const html = chunkProducts.map(product => buildProductCard(product)).join('');
     
     if (sentinelElement) {
         sentinelElement.insertAdjacentHTML('beforebegin', html);
@@ -324,12 +306,42 @@ function updateSiteContent() {
     }
 }
 
+// ✅ عرض الفئات مع زر معلومات لكل فئة
 function renderCategories() {
     const container = document.getElementById('categoryFilters');
     if (!container || !storeData.categories) return;
-    container.innerHTML = storeData.categories.map(cat => 
-        `<button class="filter-btn ${cat.id === 'all' ? 'active' : ''}" data-category="${cat.id}">${cat.icon} ${cat.name}</button>`
-    ).join('');
+    
+    container.innerHTML = storeData.categories.map(cat => {
+        const hasDescription = cat.description && cat.description.trim() !== '';
+        const infoBtn = hasDescription ? 
+            `<span class="info-btn" onclick="event.stopPropagation(); showCategoryDescription('${cat.id}')" title="معلومات عن الفئة">؟</span>` : 
+            '';
+        
+        return `<button class="filter-btn ${cat.id === 'all' ? 'active' : ''}" data-category="${cat.id}">
+            ${infoBtn}${cat.icon} ${cat.name}
+        </button>`;
+    }).join('');
+}
+
+// ✅ عرض وصف الفئة
+function showCategoryDescription(categoryId) {
+    const category = storeData.categories.find(c => c.id === categoryId);
+    if (!category || !category.description) return;
+    
+    const descBox = document.getElementById('categoryDescription');
+    const title = document.getElementById('categoryDescTitle');
+    const text = document.getElementById('categoryDescText');
+    
+    title.textContent = `${category.icon} ${category.name}`;
+    text.textContent = category.description;
+    descBox.style.display = 'block';
+    
+    // تمرير سلس للصندوق
+    descBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeCategoryDescription() {
+    document.getElementById('categoryDescription').style.display = 'none';
 }
 
 function showProductDetails(productId) {
@@ -340,16 +352,32 @@ function showProductDetails(productId) {
     const details = document.getElementById('productDetails');
 
     const imageSrc = getImageUrl(product.image);
+    
+    // ✅ بناء قسم الخصائص للمودال
+    let metaHtml = '';
+    const metaItems = [];
+    
+    if (product.brand) {
+        metaItems.push(`<span class="meta-item"><span class="meta-icon">🏢</span><span class="meta-value">${product.brand}</span></span>`);
+    }
+    if (product.weight) {
+        metaItems.push(`<span class="meta-item"><span class="meta-icon">⚖️</span><span class="meta-value">${product.weight}</span></span>`);
+    }
+    if (product.servings) {
+        metaItems.push(`<span class="meta-item"><span class="meta-icon">🥄</span><span class="meta-value">${product.servings} حصة</span></span>`);
+    }
+    
+    if (metaItems.length > 0) {
+        metaHtml = `<div class="product-detail-meta">${metaItems.join('')}</div>`;
+    }
 
     details.innerHTML = `
-        <img src="${imageSrc}" 
-             alt="${product.name}" 
-             class="product-detail-image" 
-             onerror="handleImageError(this)">
+        <img src="${imageSrc}" alt="${product.name}" class="product-detail-image" onerror="handleImageError(this)">
         <div class="product-detail-info">
             <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
             <h2>${product.name}</h2>
             <div class="price">${product.price}$ ${product.oldPrice ? `<span class="old-price" style="font-size:1.2rem;margin-right:10px;">${product.oldPrice}$</span>` : ''}</div>
+            ${metaHtml}
             <p class="description">${product.description || ''}</p>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
                 <button class="btn btn-primary" onclick="addToCart(${product.id}, this);closeProductModal();" style="flex:1;">🛒 أضف للسلة</button>
@@ -424,10 +452,7 @@ function renderCartItems() {
     }
     container.innerHTML = cart.map(item => `
         <div class="cart-item">
-            <img src="${getImageUrl(item.image)}" 
-                 alt="${item.name}" 
-                 loading="lazy"
-                 onerror="handleImageError(this)">
+            <img src="${getImageUrl(item.image)}" alt="${item.name}" loading="lazy" onerror="handleImageError(this)">
             <div class="cart-item-info">
                 <div class="cart-item-name">${item.name}</div>
                 <div class="cart-item-price">${item.price}$</div>
@@ -491,10 +516,11 @@ function setupEventListeners() {
     const filtersContainer = document.getElementById('categoryFilters');
     if (filtersContainer) {
         filtersContainer.addEventListener('click', (e) => {
-            if (e.target.classList.contains('filter-btn')) {
-                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                currentCategory = e.target.dataset.category;
+            const btn = e.target.closest('.filter-btn');
+            if (btn) {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentCategory = btn.dataset.category;
                 
                 if (currentCategory === 'all') {
                     filteredProducts = [...allProducts];
@@ -516,7 +542,8 @@ function setupEventListeners() {
                 searchQuery = e.target.value.toLowerCase();
                 filteredProducts = allProducts.filter(p => 
                     p.name.toLowerCase().includes(searchQuery) ||
-                    (p.description && p.description.toLowerCase().includes(searchQuery))
+                    (p.description && p.description.toLowerCase().includes(searchQuery)) ||
+                    (p.brand && p.brand.toLowerCase().includes(searchQuery))
                 );
                 resetAndRender();
             }, 300);
