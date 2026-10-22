@@ -6,8 +6,9 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta name="description" content="Champions Store - متجر مكملات غذائية فاخرة">
     <title>Champions Store | مكملات غذائية فاخرة</title>
+    <!-- ✅ أيقونة إيموجي لتجنب خطأ 404 لـ favicon.ico -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="logo.png" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,7 +18,8 @@
     <nav class="navbar" id="navbar">
         <div class="container nav-container">
             <div class="logo-area">
-                <img src="logo.png" alt="Champions Store" class="nav-logo" loading="eager">
+                <!-- ✅ إخفاء الصورة تلقائياً إذا لم تكن موجودة في GitHub -->
+                <img src="logo.png" alt="Champions Store" class="nav-logo" loading="eager" onerror="this.style.display='none'">
                 <span class="brand-name">Champions <span class="gold">Store</span></span>
             </div>
             <ul class="nav-links">
@@ -59,7 +61,6 @@
             </div>
             <div class="category-filters" id="categoryFilters"></div>
             
-            <!-- ✅ وصف الفئة يظهر هنا تلقائياً -->
             <div class="category-description" id="categoryDescription" style="display:none;">
                 <div class="category-desc-content">
                     <h3 id="categoryDescTitle"></h3>
@@ -68,7 +69,6 @@
                 </div>
             </div>
             
-            <!-- ✅ شريط الفرز الجديد -->
             <div class="sort-bar">
                 <div class="sort-label">🔽 ترتيب حسب:</div>
                 <div class="sort-options">
@@ -110,7 +110,7 @@
                     </ul>
                 </div>
                 <div class="about-image">
-                    <img src="logo.png" alt="Champions Store" loading="lazy">
+                    <img src="logo.png" alt="Champions Store" loading="lazy" onerror="this.style.display='none'">
                 </div>
             </div>
         </div>
@@ -122,9 +122,7 @@
                 <h2 class="section-title">تواصل <span class="gold">معنا</span></h2>
                 <p class="section-subtitle">نحن هنا لمساعدتك</p>
             </div>
-            <div class="contact-grid" id="contactGrid">
-                <!-- يتم توليده ديناميكياً من products.json -->
-            </div>
+            <div class="contact-grid" id="contactGrid"></div>
         </div>
     </section>
 
@@ -132,7 +130,7 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-brand">
-                    <img src="logo.png" alt="Champions Store" class="footer-logo" loading="lazy">
+                    <img src="logo.png" alt="Champions Store" class="footer-logo" loading="lazy" onerror="this.style.display='none'">
                     <h3>Champions <span class="gold">Store</span></h3>
                     <p id="footerDescription">مكملات غذائية فاخرة</p>
                 </div>
@@ -145,9 +143,7 @@
                         <li><a href="#contact">تواصل</a></li>
                     </ul>
                 </div>
-                <div class="footer-contact" id="footerContact">
-                    <!-- يتم توليده ديناميكياً -->
-                </div>
+                <div class="footer-contact" id="footerContact"></div>
             </div>
             <div class="footer-bottom">
                 <p id="footerCopyright">© 2026 Champions Store</p>
