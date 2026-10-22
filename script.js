@@ -13,35 +13,99 @@ let isRendering = false;
 let scrollObserver = null;
 let sentinelElement = null;
 
+// ✅ placeholder مدمج (SVG) - لا يحتاج ملف خارجي
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCBmaWxsPSIjMWMxYzFlIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIvPjx0ZXh0IGZpbGw9IiNjOGEyNWQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgeD0iNTAlIiB5PSI1MCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
 
+// ✅ دالة ذكية تتعرف على جميع أنماط الروابط
 function getImageUrl(imagePath) {
     if (!imagePath) return PLACEHOLDER_IMAGE;
+    
+    // Base64 - اتركه
     if (imagePath.startsWith('data:')) return imagePath;
+    
+    // روابط خارجية محجوبة - حوّلها
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
         const fileName = imagePath.split('/').pop().split('?')[0];
         return `images/${fileName}`;
     }
-    if (imagePath.startsWith('./images/') || imagePath.startsWith('/images/')) {
-        return imagePath.replace('./', '').replace(/^\//, '');
+    
+    // روابط نسبية - نظّفها
+    if (imagePath.startsWith('./')) {
+        return imagePath.substring(2);
     }
-    if (imagePath.startsWith('./imgs/') || imagePath.startsWith('/imgs/')) {
-        return imagePath.replace('./', '').replace(/^\//, '');
+    
+    if (imagePath.startsWith('/')) {
+        return imagePath.substring(1);
     }
-    if (imagePath.startsWith('images/') || imagePath.startsWith('imgs/')) {
-        return imagePath;
-    }
-    return `images/${imagePath}`;
+    
+    // أي نمط آخر - اتركه كما هو
+    return imagePath;
 }
 
+// ✅ نظام fallback ذكي متعدد المراحل
 function handleImageError(img) {
-    if (img.dataset.fallbackTried) { img.src = PLACEHOLDER_IMAGE; return; }
-    img.dataset.fallbackTried = '1';
+    const fallbackStage = parseInt(img.dataset.fallbackStage || '0');
+    
+    // منع الحلقة اللانهائية (5 مراحل كحد أقصى)
+    if (fallbackStage >= 5) {
+        img.src = PLACEHOLDER_IMAGE;
+        img.dataset.fallbackStage = '99';
+        return;
+    }
+    
+    img.dataset.fallbackStage = (fallbackStage + 1).toString();
     const currentSrc = img.src;
-    if (currentSrc.includes('/images/')) { img.src = currentSrc.replace('/images/', '/imgs/'); return; }
-    if (currentSrc.includes('/imgs/')) { img.src = currentSrc.replace('/imgs/', '/images/'); return; }
-    if (currentSrc.includes('images/') && !currentSrc.includes('/images/')) { img.src = currentSrc.replace('images/', 'imgs/'); return; }
-    if (currentSrc.endsWith('.webp')) { img.src = currentSrc.replace('.webp', '.png'); return; }
+    
+    console.warn(`⚠️ فشل تحميل (مرحلة ${fallbackStage + 1}):`, currentSrc);
+    
+    switch (fallbackStage) {
+        case 0:
+            // جرب 1: images/ → imgs/
+            if (currentSrc.includes('/images/')) {
+                img.src = currentSrc.replace('/images/', '/imgs/');
+                return;
+            }
+            if (currentSrc.includes('images/') && !currentSrc.includes('/images/')) {
+                img.src = currentSrc.replace('images/', 'imgs/');
+                return;
+            }
+            break;
+            
+        case 1:
+            // جرب 2: imgs/ → images/
+            if (currentSrc.includes('/imgs/')) {
+                img.src = currentSrc.replace('/imgs/', '/images/');
+                return;
+            }
+            if (currentSrc.includes('imgs/') && !currentSrc.includes('/imgs/')) {
+                img.src = currentSrc.replace('imgs/', 'images/');
+                return;
+            }
+            break;
+            
+        case 2:
+            // جرب 3: .webp → .png
+            if (currentSrc.endsWith('.webp')) {
+                img.src = currentSrc.replace('.webp', '.png');
+                return;
+            }
+            break;
+            
+        case 3:
+            // جرب 4: .webp → .jpg
+            if (currentSrc.endsWith('.webp')) {
+                img.src = currentSrc.replace('.webp', '.jpg');
+                return;
+            }
+            break;
+            
+        case 4:
+            // جرب 5: placeholder مدمج
+            img.src = PLACEHOLDER_IMAGE;
+            return;
+    }
+    
+    // إذا لم تنجح أي محاولة
     img.src = PLACEHOLDER_IMAGE;
 }
 
@@ -102,29 +166,18 @@ function createSentinel() {
     grid.appendChild(sentinelElement);
 }
 
-// ✅ دالة الفرز الجديدة
 function applySorting() {
-    if (currentSort === 'default') {
-        // لا تغيير - يبقى الترتيب الأصلي
-        return;
-    }
+    if (currentSort === 'default') return;
     
     filteredProducts.sort((a, b) => {
         switch (currentSort) {
-            case 'name-asc':
-                return a.name.localeCompare(b.name, 'ar');
-            case 'name-desc':
-                return b.name.localeCompare(a.name, 'ar');
-            case 'price-asc':
-                return a.price - b.price;
-            case 'price-desc':
-                return b.price - a.price;
+            case 'name-asc': return a.name.localeCompare(b.name, 'ar');
+            case 'name-desc': return b.name.localeCompare(a.name, 'ar');
+            case 'price-asc': return a.price - b.price;
+            case 'price-desc': return b.price - a.price;
             case 'brand':
-                const brandA = (a.brand || '').toLowerCase();
-                const brandB = (b.brand || '').toLowerCase();
-                return brandA.localeCompare(brandB, 'ar');
-            default:
-                return 0;
+                return (a.brand || '').localeCompare(b.brand || '', 'ar');
+            default: return 0;
         }
     });
 }
@@ -137,15 +190,9 @@ function buildProductCard(product) {
     let metaHtml = '';
     const metaItems = [];
     
-    if (product.brand) {
-        metaItems.push(`<span class="meta-item"><span class="meta-icon">🏢</span><span class="meta-value">${product.brand}</span></span>`);
-    }
-    if (product.weight) {
-        metaItems.push(`<span class="meta-item"><span class="meta-icon">⚖️</span><span class="meta-value">${product.weight}</span></span>`);
-    }
-    if (product.servings) {
-        metaItems.push(`<span class="meta-item"><span class="meta-icon">🥄</span><span class="meta-value">${product.servings} حصة</span></span>`);
-    }
+    if (product.brand) metaItems.push(`<span class="meta-item"><span class="meta-icon">🏢</span><span class="meta-value">${product.brand}</span></span>`);
+    if (product.weight) metaItems.push(`<span class="meta-item"><span class="meta-icon">⚖️</span><span class="meta-value">${product.weight}</span></span>`);
+    if (product.servings) metaItems.push(`<span class="meta-item"><span class="meta-icon">🥄</span><span class="meta-value">${product.servings} حصة</span></span>`);
     
     if (metaItems.length > 0) {
         metaHtml = `<div class="product-meta">${metaItems.join('')}</div>`;
@@ -256,7 +303,6 @@ function setupInfiniteScroll() {
     scrollObserver.observe(sentinelElement);
 }
 
-// ✅ إعداد أزرار الفرز
 function setupSortButtons() {
     const sortBtns = document.querySelectorAll('.sort-btn');
     sortBtns.forEach(btn => {
@@ -264,24 +310,19 @@ function setupSortButtons() {
             sortBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentSort = btn.dataset.sort;
-            
-            // إعادة الفلترة والفرز
             applyFiltersAndSort();
             resetAndRender();
         });
     });
 }
 
-// ✅ تطبيق الفلترة والفرز معاً
 function applyFiltersAndSort() {
-    // فلترة حسب الفئة
     if (currentCategory === 'all') {
         filteredProducts = [...allProducts];
     } else {
         filteredProducts = allProducts.filter(p => p.category === currentCategory);
     }
     
-    // فلترة حسب البحث
     if (searchQuery) {
         filteredProducts = filteredProducts.filter(p => 
             p.name.toLowerCase().includes(searchQuery) ||
@@ -290,7 +331,6 @@ function applyFiltersAndSort() {
         );
     }
     
-    // تطبيق الفرز
     applySorting();
 }
 
@@ -345,7 +385,6 @@ function updateSiteContent() {
     }
 }
 
-// ✅ توليد قسم التواصل ديناميكياً
 function renderContactSection() {
     const grid = document.getElementById('contactGrid');
     if (!grid || !storeData || !storeData.storeInfo) return;
@@ -389,37 +428,25 @@ function renderContactSection() {
     grid.innerHTML = html;
 }
 
-// ✅ توليد الفوتر ديناميكياً
 function renderFooter() {
     if (!storeData || !storeData.storeInfo) return;
     const info = storeData.storeInfo;
     
-    // وصف الفوتر
     const footerDesc = document.getElementById('footerDescription');
     if (footerDesc && info.footerDescription) {
         footerDesc.textContent = info.footerDescription;
     }
     
-    // معلومات التواصل في الفوتر
     const footerContact = document.getElementById('footerContact');
     if (footerContact) {
         let contactHtml = '<h4>تواصل</h4>';
-        if (info.whatsapp) {
-            contactHtml += `<p>📱 واتساب: +${info.whatsapp}</p>`;
-        }
-        if (info.location) {
-            contactHtml += `<p>📍 ${info.location}</p>`;
-        }
-        if (info.email) {
-            contactHtml += `<p>📧 ${info.email}</p>`;
-        }
-        if (info.instagram) {
-            contactHtml += `<p>📸 @${info.instagram}</p>`;
-        }
+        if (info.whatsapp) contactHtml += `<p>📱 واتساب: +${info.whatsapp}</p>`;
+        if (info.location) contactHtml += `<p>📍 ${info.location}</p>`;
+        if (info.email) contactHtml += `<p>📧 ${info.email}</p>`;
+        if (info.instagram) contactHtml += `<p>📸 @${info.instagram}</p>`;
         footerContact.innerHTML = contactHtml;
     }
     
-    // حقوق النشر
     const copyright = document.getElementById('footerCopyright');
     if (copyright && info.copyright) {
         copyright.textContent = info.copyright;
@@ -435,7 +462,6 @@ function renderCategories() {
     ).join('');
 }
 
-// ✅ عرض وصف الفئة تلقائياً عند اختيارها
 function showCategoryDescription(categoryId) {
     const descBox = document.getElementById('categoryDescription');
     const title = document.getElementById('categoryDescTitle');
@@ -473,15 +499,9 @@ function showProductDetails(productId) {
     let metaHtml = '';
     const metaItems = [];
     
-    if (product.brand) {
-        metaItems.push(`<span class="meta-item"><span class="meta-icon">🏢</span><span class="meta-value">${product.brand}</span></span>`);
-    }
-    if (product.weight) {
-        metaItems.push(`<span class="meta-item"><span class="meta-icon">⚖️</span><span class="meta-value">${product.weight}</span></span>`);
-    }
-    if (product.servings) {
-        metaItems.push(`<span class="meta-item"><span class="meta-icon">🥄</span><span class="meta-value">${product.servings} حصة</span></span>`);
-    }
+    if (product.brand) metaItems.push(`<span class="meta-item"><span class="meta-icon">🏢</span><span class="meta-value">${product.brand}</span></span>`);
+    if (product.weight) metaItems.push(`<span class="meta-item"><span class="meta-icon">⚖️</span><span class="meta-value">${product.weight}</span></span>`);
+    if (product.servings) metaItems.push(`<span class="meta-item"><span class="meta-icon">🥄</span><span class="meta-value">${product.servings} حصة</span></span>`);
     
     if (metaItems.length > 0) {
         metaHtml = `<div class="product-detail-meta">${metaItems.join('')}</div>`;
@@ -637,12 +657,8 @@ function setupEventListeners() {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentCategory = btn.dataset.category;
-                
-                // ✅ تطبيق الفلترة والفرز معاً
                 applyFiltersAndSort();
                 resetAndRender();
-                
-                // ✅ عرض وصف الفئة تلقائياً
                 showCategoryDescription(currentCategory);
             }
         });
