@@ -1,35 +1,37 @@
 const STORAGE_KEY = 'championsStoreData';
-const PASSWORD_KEY = 'championsStorePassword';
-const GITHUB_STORAGE_KEY = 'championsGitHubConfig';
-const DEFAULT_PASSWORD = btoa('admin123');
-
 let storeData = null;
-let editingProductId = null;
+let allProducts = [];
+let filteredProducts = [];
+let currentCategory = 'all';
+let currentSort = 'default';
+let searchQuery = '';
+let cart = JSON.parse(localStorage.getItem('championsCart')) || [];
+
+const CHUNK_SIZE = 12;
+let currentChunk = 0;
+let isRendering = false;
+let scrollObserver = null;
+let sentinelElement = null;
 
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCBmaWxsPSIjMWMxYzFlIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIvPjx0ZXh0IGZpbGw9IiNjOGEyNWQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgeD0iNTAlIiB5PSI1MCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
 
-function sanitizeFileName(name) {
-    if (!name) return '';
-    return name.toLowerCase().trim()
-        .replace(/[أإآ]/g, 'a').replace(/[ة]/g, 'h').replace(/[ى]/g, 'a')
-        .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').substring(0, 40);
-}
-
-function generateImageFileName(product) {
-    let sanitizedName = sanitizeFileName(product.name);
-    if (!sanitizedName || sanitizedName.trim() === '') sanitizedName = `product-${product.id}`;
-    return `${sanitizedName}-${product.id}.webp`;
-}
-
-function extractFileName(imagePath) {
-    if (!imagePath) return null;
-    return imagePath.split('/').pop().split('?')[0];
-}
+// ✅ أيقونات SVG الرسمية
+const ICONS = {
+    whatsapp: `<svg viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>`,
+    
+    instagram: `<svg viewBox="0 0 24 24"><defs><linearGradient id="igGrad" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#FD5"/><stop offset="50%" stop-color="#FF543E"/><stop offset="100%" stop-color="#C837AB"/></linearGradient></defs><path fill="url(#igGrad)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>`,
+    
+    location: `<svg viewBox="0 0 24 24" fill="#c8a25d"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg>`,
+    
+    email: `<svg viewBox="0 0 24 24" fill="#0a84ff"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>`
+};
 
 function getImageUrl(imagePath) {
     if (!imagePath) return PLACEHOLDER_IMAGE;
     if (imagePath.startsWith('data:')) return imagePath;
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return `images/${imagePath.split('/').pop().split('?')[0]}`;
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return `images/${imagePath.split('/').pop().split('?')[0]}`;
+    }
     if (imagePath.startsWith('./')) return imagePath.substring(2);
     if (imagePath.startsWith('/')) return imagePath.substring(1);
     return imagePath;
@@ -46,735 +48,552 @@ function handleImageError(img) {
     img.src = PLACEHOLDER_IMAGE;
 }
 
-// Login
-function checkPassword() {
-    const input = document.getElementById('passwordInput').value;
-    const saved = localStorage.getItem(PASSWORD_KEY) || DEFAULT_PASSWORD;
-    if (btoa(input) === saved) {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('adminPanel').style.display = 'block';
-        loadData();
-    } else {
-        document.getElementById('errorMsg').textContent = 'كلمة المرور غير صحيحة';
-    }
-}
-document.getElementById('passwordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPassword(); });
-function logout() { document.getElementById('adminPanel').style.display = 'none'; document.getElementById('loginScreen').style.display = 'flex'; }
-
-async function loadData() {
+async function init() {
     try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) storeData = JSON.parse(saved);
-        else {
-            const res = await fetch('products.json?v=' + Date.now());
-            storeData = await res.json();
-            saveToLocalStorage();
-        }
-        renderAll();
-    } catch (e) { showToast('خطأ في التحميل: ' + e.message, 'error'); }
-}
-
-async function reloadFromServer() {
-    if (!confirm('⚠️ إعادة تحميل من GitHub؟')) return;
-    try {
-        localStorage.removeItem(STORAGE_KEY);
-        const res = await fetch('products.json?v=' + Date.now());
-        storeData = await res.json();
-        saveToLocalStorage();
-        renderAll();
-        showToast('✅ تم إعادة التحميل');
-    } catch (e) { showToast('❌ خطأ: ' + e.message, 'error'); }
-}
-
-function saveToLocalStorage() { if (storeData) localStorage.setItem(STORAGE_KEY, JSON.stringify(storeData)); }
-function renderAll() {
-    if (!storeData) return;
-    renderProducts(); renderCategoriesAdmin(); renderStoreInfo(); renderFooterInfo(); renderAboutInfo(); renderLogoPreview(); populateAdminCategoryFilter();
-}
-
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(btn.dataset.tab + 'Tab').classList.add('active');
-    });
-});
-
-function populateAdminCategoryFilter() {
-    const select = document.getElementById('adminCategoryFilter');
-    if (!select || !storeData || !storeData.categories) return;
-    select.innerHTML = '<option value="all">🏷️ جميع الفئات</option>';
-    storeData.categories.forEach(cat => { if (cat.id !== 'all') select.innerHTML += `<option value="${cat.id}">${cat.icon} ${cat.name}</option>`; });
-}
-
-function filterAdminProducts() {
-    const search = document.getElementById('adminProductSearch').value.toLowerCase();
-    const categoryFilter = document.getElementById('adminCategoryFilter').value;
-    const sortBy = document.getElementById('adminSortBy').value;
-    let products = [...storeData.products];
-    if (search) products = products.filter(p => p.name.toLowerCase().includes(search) || (p.brand && p.brand.toLowerCase().includes(search)));
-    if (categoryFilter !== 'all') products = products.filter(p => p.category === categoryFilter);
-    switch (sortBy) {
-        case 'name-asc': products.sort((a, b) => a.name.localeCompare(b.name, 'ar')); break;
-        case 'name-desc': products.sort((a, b) => b.name.localeCompare(a.name, 'ar')); break;
-        case 'price-asc': products.sort((a, b) => a.price - b.price); break;
-        case 'price-desc': products.sort((a, b) => b.price - a.price); break;
-        case 'brand': products.sort((a, b) => (a.brand || '').localeCompare(b.brand || '', 'ar')); break;
-        case 'category': products.sort((a, b) => (a.category || '').localeCompare(b.category || '', 'ar')); break;
-    }
-    renderProductsList(products);
-}
-
-function renderProducts() { renderProductsList(storeData.products); }
-
-function renderProductsList(products) {
-    const container = document.getElementById('productsTable');
-    if (!container || !storeData) return;
-    const categories = storeData.categories.filter(c => c.id !== 'all');
-    
-    let html = '<div class="product-row header"><div>صورة</div><div>الاسم</div><div>السعر</div><div>الفئة</div><div>الحالة</div><div>إجراءات</div></div>';
-    
-    products.forEach(p => {
-        const cat = categories.find(c => c.id === p.category);
-        const isSoldOut = p.soldOut === true;
-        const statusBadge = isSoldOut 
-            ? '<span style="background:var(--danger);color:white;padding:4px 10px;border-radius:12px;font-size:0.75rem;font-weight:700;">⛔ نفذت</span>'
-            : '<span style="background:var(--success);color:white;padding:4px 10px;border-radius:12px;font-size:0.75rem;font-weight:700;">✅ متوفر</span>';
+        const grid = document.getElementById('productGrid');
+        grid.innerHTML = `<div id="initial-loader" style="grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; padding: 60px 0;"><div class="loading-spinner"></div></div>`;
         
-        html += `<div class="product-row" data-product-id="${p.id}" style="${isSoldOut ? 'opacity:0.7;' : ''}">
-            <img src="${getImageUrl(p.image)}" alt="${p.name}" onerror="handleImageError(this)">
-            <div>
-                <strong>${p.name}</strong>
-                ${p.brand ? `<br><small style="color:var(--text-secondary);">🏢 ${p.brand}</small>` : ''}
-                ${p.badge ? `<br><small style="color:var(--gold-dark);">${p.badge}</small>` : ''}
-                <br><small style="color:var(--text-tertiary);font-size:0.7rem;">📁 ${extractFileName(p.image) || 'لا توجد'}</small>
+        const response = await fetch('products.json?t=' + Date.now());
+        if (!response.ok) throw new Error('فشل في تحميل المنتجات');
+        
+        const data = await response.json();
+        if (!data || !data.products || !Array.isArray(data.products)) throw new Error('بيانات غير صحيحة');
+        
+        storeData = data;
+        allProducts = data.products || [];
+        filteredProducts = [...allProducts];
+        
+        updateSiteContent();
+        renderContactSection();
+        renderFooter();
+        renderCategories();
+        
+        const initialLoader = document.getElementById('initial-loader');
+        if (initialLoader) initialLoader.remove();
+        
+        currentChunk = 0;
+        createSentinel();
+        renderNextChunk();
+        setupInfiniteScroll();
+        updateCartUI();
+        setupEventListeners();
+        setupSortButtons();
+        
+    } catch (error) {
+        console.error('❌ خطأ:', error);
+        document.getElementById('productGrid').innerHTML = `
+            <div style="text-align:center;padding:40px;color:var(--danger);">
+                <h3>❌ خطأ في تحميل المنتجات</h3>
+                <p style="margin-top:10px;color:var(--text-secondary);">${error.message}</p>
+                <button onclick="location.reload()" style="margin-top:20px;padding:10px 20px;background:var(--gold);color:var(--primary);border:none;border-radius:8px;cursor:pointer;font-weight:600;">🔄 إعادة المحاولة</button>
+            </div>`;
+    }
+}
+
+function createSentinel() {
+    const grid = document.getElementById('productGrid');
+    const old = document.getElementById('scroll-sentinel');
+    if (old) old.remove();
+    sentinelElement = document.createElement('div');
+    sentinelElement.id = 'scroll-sentinel';
+    sentinelElement.style.cssText = 'height:60px;width:100%;display:flex;justify-content:center;align-items:center;margin-top:20px;';
+    grid.appendChild(sentinelElement);
+}
+
+function applySorting() {
+    if (currentSort === 'default') return;
+    filteredProducts.sort((a, b) => {
+        switch (currentSort) {
+            case 'name-asc': return a.name.localeCompare(b.name, 'ar');
+            case 'name-desc': return b.name.localeCompare(a.name, 'ar');
+            case 'price-asc': return a.price - b.price;
+            case 'price-desc': return b.price - a.price;
+            case 'brand': return (a.brand || '').localeCompare(b.brand || '', 'ar');
+            default: return 0;
+        }
+    });
+}
+
+// ✅ بناء بطاقة المنتج مع دعم Sold Out
+function buildProductCard(product) {
+    const category = storeData.categories.find(c => c.id === product.category);
+    const badgeClass = product.badge === 'خصم' ? 'sale' : '';
+    const imageSrc = getImageUrl(product.image);
+    const isSoldOut = product.soldOut === true;
+    
+    let metaHtml = '';
+    const metaItems = [];
+    if (product.brand) metaItems.push(`<span class="meta-item"><span class="meta-icon">🏢</span><span class="meta-value">${product.brand}</span></span>`);
+    if (product.weight) metaItems.push(`<span class="meta-item"><span class="meta-icon">⚖️</span><span class="meta-value">${product.weight}</span></span>`);
+    if (product.servings) metaItems.push(`<span class="meta-item"><span class="meta-icon">🥄</span><span class="meta-value">${product.servings} حصة</span></span>`);
+    if (metaItems.length > 0) metaHtml = `<div class="product-meta">${metaItems.join('')}</div>`;
+    
+    // شارة Sold Out المائلة
+    const soldOutBadge = isSoldOut ? `<div class="sold-out-badge">Sold Out</div>` : '';
+    
+    // كلاس Sold Out للبطاقة
+    const soldOutClass = isSoldOut ? 'sold-out' : '';
+    
+    // زر الإضافة
+    const addToCartBtn = isSoldOut 
+        ? `<button class="add-to-cart-btn" disabled>🛒 أضف</button>`
+        : `<button class="add-to-cart-btn" onclick="addToCart(${product.id}, this)">🛒 أضف</button>`;
+    
+    return `<div class="product-card ${soldOutClass}">
+        ${product.badge ? `<span class="product-badge ${badgeClass}">${product.badge}</span>` : ''}
+        <div class="product-image-wrapper">
+            ${soldOutBadge}
+            <img src="${imageSrc}" alt="${product.name}" class="product-image" loading="lazy" decoding="async"
+                 onerror="handleImageError(this)" onclick="showProductDetails(${product.id})">
+        </div>
+        <div class="product-info">
+            <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
+            <div class="product-name-price">
+                <h3 class="product-name" onclick="showProductDetails(${product.id})">${product.name}</h3>
+                <div class="product-price">
+                    <span class="current-price">${product.price}$</span>
+                    ${product.oldPrice ? `<span class="old-price">${product.oldPrice}$</span>` : ''}
+                </div>
             </div>
-            <div>${p.price} $</div>
-            <div>${cat ? cat.name : p.category}</div>
-            <div>${statusBadge}</div>
+            ${metaHtml}
             <div class="product-actions">
-                <button class="btn-edit" data-action="edit" data-id="${p.id}">✏️</button>
-                <button class="btn-delete" data-action="delete" data-id="${p.id}">🗑️</button>
+                ${addToCartBtn}
+                <button class="view-btn" onclick="showProductDetails(${product.id})">📋 تفاصيل</button>
+            </div>
+        </div>
+    </div>`;
+}
+
+function renderNextChunk() {
+    if (isRendering) return;
+    isRendering = true;
+    const grid = document.getElementById('productGrid');
+    const noResults = document.getElementById('noResults');
+    const start = currentChunk * CHUNK_SIZE;
+    const end = start + CHUNK_SIZE;
+    const chunkProducts = filteredProducts.slice(start, end);
+    
+    if (filteredProducts.length === 0) {
+        grid.innerHTML = '';
+        if (noResults) noResults.style.display = 'block';
+        if (sentinelElement) sentinelElement.style.display = 'none';
+        isRendering = false; return;
+    }
+    if (noResults) noResults.style.display = 'none';
+    if (chunkProducts.length === 0) {
+        if (sentinelElement) sentinelElement.style.display = 'none';
+        isRendering = false; return;
+    }
+    if (sentinelElement) {
+        sentinelElement.style.display = 'flex';
+        sentinelElement.innerHTML = '<div class="loading-spinner"></div>';
+    }
+    
+    const html = chunkProducts.map(p => buildProductCard(p)).join('');
+    if (sentinelElement) sentinelElement.insertAdjacentHTML('beforebegin', html);
+    else grid.insertAdjacentHTML('beforeend', html);
+    
+    currentChunk++;
+    isRendering = false;
+    if (end >= filteredProducts.length && sentinelElement) sentinelElement.style.display = 'none';
+}
+
+function resetAndRender() {
+    currentChunk = 0;
+    const grid = document.getElementById('productGrid');
+    grid.querySelectorAll('.product-card').forEach(c => c.remove());
+    createSentinel();
+    renderNextChunk();
+    setupInfiniteScroll();
+}
+
+function setupInfiniteScroll() {
+    if (scrollObserver) scrollObserver.disconnect();
+    if (!sentinelElement) return;
+    scrollObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !isRendering) {
+            if (currentChunk * CHUNK_SIZE < filteredProducts.length) {
+                if ('requestIdleCallback' in window) requestIdleCallback(() => renderNextChunk());
+                else setTimeout(() => renderNextChunk(), 100);
+            } else {
+                scrollObserver.disconnect();
+            }
+        }
+    }, { rootMargin: '300px' });
+    scrollObserver.observe(sentinelElement);
+}
+
+function setupSortButtons() {
+    document.querySelectorAll('.sort-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentSort = btn.dataset.sort;
+            applyFiltersAndSort();
+            resetAndRender();
+        });
+    });
+}
+
+function applyFiltersAndSort() {
+    filteredProducts = currentCategory === 'all' ? [...allProducts] : allProducts.filter(p => p.category === currentCategory);
+    if (searchQuery) {
+        filteredProducts = filteredProducts.filter(p => 
+            p.name.toLowerCase().includes(searchQuery) ||
+            (p.description && p.description.toLowerCase().includes(searchQuery)) ||
+            (p.brand && p.brand.toLowerCase().includes(searchQuery))
+        );
+    }
+    applySorting();
+}
+
+// ✅ إصلاح مشكلة اللوغو - fallback ذكي
+function updateSiteContent() {
+    if (!storeData || !storeData.storeInfo) return;
+    const info = storeData.storeInfo;
+
+    if (info.name) {
+        document.title = info.name + ' | مكملات غذائية';
+        document.querySelectorAll('.brand-name, .footer-brand h3').forEach(el => {
+            el.innerHTML = el.innerHTML.replace(/Champions\s*<span.*?>Store<\/span>/i, `${info.name} <span class="gold">Store</span>`);
+        });
+    }
+
+    if (info.tagline) { const h = document.querySelector('.hero-subtitle'); if (h) h.textContent = info.tagline; }
+    if (info.location) { const h = document.querySelector('.hero-desc'); if (h) h.textContent = info.location; }
+    if (info.whatsapp) {
+        const url = `https://wa.me/${info.whatsapp}`;
+        document.querySelectorAll('a[href*="wa.me"]').forEach(a => a.href = url);
+    }
+    
+    // ✅ إصلاح اللوغو: إذا كان يشير إلى logo.png بأي شكل، استخدم الرابط المحلي
+    if (info.logo) {
+        let logoUrl = info.logo;
+        const logoFileName = logoUrl.split('/').pop().split('?')[0].toLowerCase();
+        
+        // إذا كان اسم الملف هو logo.png/webp/jpg، استخدم الرابط المحلي
+        if (logoFileName === 'logo.png' || logoFileName === 'logo.webp' || logoFileName === 'logo.jpg' || logoFileName === 'logo') {
+            logoUrl = 'logo.png';
+        } else {
+            logoUrl = getImageUrl(logoUrl);
+        }
+        
+        document.querySelectorAll('.nav-logo, .about-image img, .footer-logo').forEach(img => {
+            img.src = logoUrl;
+            // ✅ إذا فشل التحميل، أعد إلى logo.png المحلي (لا تُخفِ الصورة أبداً)
+            img.onerror = function() {
+                if (!this.dataset.fallback) {
+                    this.dataset.fallback = '1';
+                    this.src = 'logo.png';
+                }
+            };
+        });
+    }
+
+    if (storeData.about) {
+        const t = document.querySelector('.about-text h3');
+        if (t && storeData.about.title) t.textContent = storeData.about.title;
+        const d = document.querySelector('.about-text > p');
+        if (d && storeData.about.description) d.textContent = storeData.about.description;
+        if (storeData.about.features) {
+            const list = document.querySelector('.about-list');
+            if (list) list.innerHTML = storeData.about.features.split('\n').filter(f => f.trim()).map(f => `<li>${f}</li>`).join('');
+        }
+    }
+}
+
+// ✅ قسم التواصل بأيقونات SVG رسمية
+function renderContactSection() {
+    const grid = document.getElementById('contactGrid');
+    if (!grid || !storeData || !storeData.storeInfo) return;
+    const info = storeData.storeInfo;
+    const wa = info.whatsapp || '963900000000';
+    const insta = info.instagram || 'champions_store';
+    const loc = info.location || 'دمشق - سوريا';
+    const email = info.email || '';
+    
+    grid.innerHTML = `
+        <a href="https://wa.me/${wa}" target="_blank" class="contact-card">
+            <div class="contact-icon whatsapp">${ICONS.whatsapp}</div>
+            <h3>واتساب</h3>
+            <p>للطلب والاستفسار</p>
+        </a>
+        <a href="https://instagram.com/${insta}" target="_blank" class="contact-card">
+            <div class="contact-icon instagram">${ICONS.instagram}</div>
+            <h3>إنستغرام</h3>
+            <p>تابعنا للعروض</p>
+        </a>
+        <div class="contact-card">
+            <div class="contact-icon location">${ICONS.location}</div>
+            <h3>موقعنا</h3>
+            <p>${loc}</p>
+        </div>
+        ${email ? `
+        <a href="mailto:${email}" class="contact-card">
+            <div class="contact-icon email">${ICONS.email}</div>
+            <h3>البريد</h3>
+            <p>${email}</p>
+        </a>` : ''}
+    `;
+}
+
+function renderFooter() {
+    if (!storeData || !storeData.storeInfo) return;
+    const info = storeData.storeInfo;
+    const fd = document.getElementById('footerDescription');
+    if (fd && info.footerDescription) fd.textContent = info.footerDescription;
+    
+    const fc = document.getElementById('footerContact');
+    if (fc) {
+        let html = '<h4>تواصل</h4>';
+        if (info.whatsapp) html += `<p>📱 واتساب: +${info.whatsapp}</p>`;
+        if (info.location) html += `<p>📍 ${info.location}</p>`;
+        if (info.email) html += `<p>📧 ${info.email}</p>`;
+        if (info.instagram) html += `<p>📸 @${info.instagram}</p>`;
+        fc.innerHTML = html;
+    }
+    const cp = document.getElementById('footerCopyright');
+    if (cp && info.copyright) cp.textContent = info.copyright;
+}
+
+function renderCategories() {
+    const c = document.getElementById('categoryFilters');
+    if (!c || !storeData.categories) return;
+    c.innerHTML = storeData.categories.map(cat => 
+        `<button class="filter-btn ${cat.id === 'all' ? 'active' : ''}" data-category="${cat.id}">${cat.icon} ${cat.name}</button>`
+    ).join('');
+}
+
+function showCategoryDescription(categoryId) {
+    const box = document.getElementById('categoryDescription');
+    const title = document.getElementById('categoryDescTitle');
+    const text = document.getElementById('categoryDescText');
+    if (categoryId === 'all') { box.style.display = 'none'; return; }
+    const cat = storeData.categories.find(c => c.id === categoryId);
+    if (!cat || !cat.description || cat.description.trim() === '') { box.style.display = 'none'; return; }
+    title.textContent = `${cat.icon} ${cat.name}`;
+    text.textContent = cat.description;
+    box.style.display = 'block';
+}
+
+function closeCategoryDescription() { document.getElementById('categoryDescription').style.display = 'none'; }
+
+// ✅ عرض تفاصيل المنتج مع دعم Sold Out
+function showProductDetails(productId) {
+    const product = allProducts.find(p => p.id === productId);
+    if (!product) return;
+    const category = storeData.categories.find(c => c.id === product.category);
+    const modal = document.getElementById('productModal');
+    const details = document.getElementById('productDetails');
+    const imageSrc = getImageUrl(product.image);
+    const isSoldOut = product.soldOut === true;
+    
+    let metaHtml = '';
+    const metaItems = [];
+    if (product.brand) metaItems.push(`<span class="meta-item"><span class="meta-icon">🏢</span><span class="meta-value">${product.brand}</span></span>`);
+    if (product.weight) metaItems.push(`<span class="meta-item"><span class="meta-icon">⚖️</span><span class="meta-value">${product.weight}</span></span>`);
+    if (product.servings) metaItems.push(`<span class="meta-item"><span class="meta-icon">🥄</span><span class="meta-value">${product.servings} حصة</span></span>`);
+    if (metaItems.length > 0) metaHtml = `<div class="product-detail-meta">${metaItems.join('')}</div>`;
+
+    // ✅ شارة Sold Out في المودال
+    const soldOutBadge = isSoldOut ? `<div class="product-detail-sold-out">⛔ نفذت الكمية - Sold Out</div>` : '';
+    
+    // ✅ زر الإضافة معطل إذا نفذت الكمية
+    const addToCartBtn = isSoldOut
+        ? `<button class="btn btn-primary btn-disabled" disabled>⛔ نفذت الكمية</button>`
+        : `<button class="btn btn-primary" onclick="addToCart(${product.id}, this);closeProductModal();" style="flex:1;">🛒 أضف للسلة</button>`;
+
+    details.innerHTML = `
+        <img src="${imageSrc}" alt="${product.name}" class="product-detail-image" onerror="handleImageError(this)">
+        <div class="product-detail-info">
+            <div class="product-category">${category ? category.icon + ' ' + category.name : ''}</div>
+            <h2>${product.name}</h2>
+            ${soldOutBadge}
+            <div class="price">${product.price}$ ${product.oldPrice ? `<span class="old-price" style="font-size:1.2rem;margin-right:10px;">${product.oldPrice}$</span>` : ''}</div>
+            ${metaHtml}
+            <p class="description">${product.description || ''}</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                ${addToCartBtn}
+                <button class="btn btn-outline" onclick="orderViaWhatsApp(${product.id})" style="flex:1;">💬 اطلب عبر واتساب</button>
             </div>
         </div>`;
-    });
-    
-    container.innerHTML = html;
-    container.querySelectorAll('[data-action="edit"]').forEach(btn => btn.addEventListener('click', (e) => editProduct(parseInt(e.currentTarget.dataset.id))));
-    container.querySelectorAll('[data-action="delete"]').forEach(btn => btn.addEventListener('click', (e) => deleteProduct(parseInt(e.currentTarget.dataset.id))));
-}
-
-function openProductModal() {
-    editingProductId = null;
-    document.getElementById('modalTitle').textContent = '➕ إضافة منتج';
-    ['productId','productName','productPrice','productOldPrice','productDescription','productImageUrl','productBrand','productWeight','productServings'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('productBadge').value = '';
-    document.getElementById('productImageUpload').value = '';
-    document.getElementById('imagePreview').style.display = 'none';
-    document.getElementById('productSoldOut').checked = false;
-    renderCategorySelect();
-    document.getElementById('productModal').classList.add('active');
+    modal.classList.add('active');
 }
 
 function closeProductModal() { document.getElementById('productModal').classList.remove('active'); }
 
-function renderCategorySelect() {
-    const select = document.getElementById('productCategory');
-    const categories = storeData.categories.filter(c => c.id !== 'all');
-    select.innerHTML = categories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
-}
-
-function editProduct(id) {
-    const p = storeData.products.find(x => x.id === id);
-    if (!p) { showToast('المنتج غير موجود', 'error'); return; }
-    
-    editingProductId = id;
-    document.getElementById('modalTitle').textContent = '✏️ تعديل منتج';
-    
-    document.getElementById('productName').value = p.name;
-    document.getElementById('productPrice').value = p.price;
-    document.getElementById('productOldPrice').value = p.oldPrice || '';
-    document.getElementById('productDescription').value = p.description || '';
-    document.getElementById('productBadge').value = p.badge || '';
-    document.getElementById('productBrand').value = p.brand || '';
-    document.getElementById('productWeight').value = p.weight || '';
-    document.getElementById('productServings').value = p.servings || '';
-    document.getElementById('productSoldOut').checked = p.soldOut === true;
-    
-    renderCategorySelect();
-    document.getElementById('productCategory').value = p.category;
-    
-    if (p.image && p.image.startsWith('data:')) {
-        document.getElementById('imagePreview').src = p.image;
-        document.getElementById('imagePreview').style.display = 'block';
-        document.getElementById('productImageUrl').value = '';
-    } else {
-        document.getElementById('productImageUrl').value = p.image || '';
-        document.getElementById('imagePreview').style.display = 'none';
+function addToCart(productId, btnElement) {
+    const product = allProducts.find(p => p.id === productId);
+    if (!product) return;
+    // ✅ منع الإضافة إذا نفذت الكمية
+    if (product.soldOut) {
+        showNotification('⛔ هذا المنتج نفذت كميته', 'error');
+        return;
     }
-    
-    document.getElementById('productModal').classList.add('active');
-}
-
-function deleteProduct(id) {
-    if (!confirm('حذف هذا المنتج؟')) return;
-    storeData.products = storeData.products.filter(p => p.id !== id);
-    saveToLocalStorage();
-    filterAdminProducts();
-    showToast('تم الحذف ✓');
-}
-
-function handleImageUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        document.getElementById('imagePreview').src = e.target.result;
-        document.getElementById('imagePreview').style.display = 'block';
-        document.getElementById('productImageUrl').value = '';
-    };
-    reader.readAsDataURL(file);
-}
-
-function saveProduct() {
-    const name = document.getElementById('productName').value.trim();
-    const category = document.getElementById('productCategory').value;
-    const price = parseFloat(document.getElementById('productPrice').value);
-    const oldPrice = parseFloat(document.getElementById('productOldPrice').value) || null;
-    const description = document.getElementById('productDescription').value.trim();
-    const badge = document.getElementById('productBadge').value || null;
-    const imageUrl = document.getElementById('productImageUrl').value.trim();
-    const preview = document.getElementById('imagePreview');
-    const brand = document.getElementById('productBrand').value.trim();
-    const weight = document.getElementById('productWeight').value.trim();
-    const servings = parseInt(document.getElementById('productServings').value) || null;
-    const soldOut = document.getElementById('productSoldOut').checked;
-    
-    if (!name || !category || isNaN(price)) { showToast('يرجى ملء الحقول المطلوبة (*)', 'error'); return; }
-    
-    let image = imageUrl;
-    if (preview.style.display !== 'none' && preview.src && !preview.src.includes(window.location.href)) image = preview.src;
-    if (!image) image = 'images/placeholder.webp';
-    
-    if (editingProductId) {
-        const p = storeData.products.find(x => x.id === editingProductId);
-        if (p) {
-            if (p.name !== name && !image.startsWith('data:')) { p._needsImageRename = true; p._oldImageFileName = extractFileName(image); }
-            Object.assign(p, { name, category, price, oldPrice, description, badge, image, brand, weight, servings, soldOut });
-        }
-    } else {
-        const newId = storeData.products.length > 0 ? Math.max(...storeData.products.map(p => p.id)) + 1 : 1;
-        storeData.products.push({ id: newId, name, category, price, oldPrice, description, badge, image, brand, weight, servings, soldOut });
+    const existing = cart.find(item => item.id === productId);
+    if (existing) existing.quantity++;
+    else cart.push({ id: product.id, name: product.name, price: product.price, image: product.image, quantity: 1 });
+    saveCart(); updateCartUI();
+    if (btnElement) {
+        const orig = btnElement.innerHTML;
+        btnElement.innerHTML = '✓ تمت';
+        btnElement.classList.add('added');
+        setTimeout(() => { btnElement.innerHTML = orig; btnElement.classList.remove('added'); }, 1500);
     }
-    
-    saveToLocalStorage();
-    filterAdminProducts();
-    closeProductModal();
-    showToast(editingProductId ? 'تم التحديث ✓' : 'تمت الإضافة ✓');
+    const cartBtn = document.getElementById('cartBtn');
+    cartBtn.classList.add('pulse');
+    setTimeout(() => cartBtn.classList.remove('pulse'), 400);
+    showNotification('تمت إضافة المنتج للسلة ✓');
 }
 
-function renderCategoriesAdmin() {
-    const list = document.getElementById('categoriesList');
-    if (!list || !storeData || !storeData.categories) return;
-    let html = '<ul style="list-style:none;padding:0;">';
-    storeData.categories.forEach(cat => {
-        if (cat.id === 'all') return;
-        html += `<li style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(200, 162, 93, 0.05);margin-bottom:8px;border-radius:8px;border:1px solid rgba(200, 162, 93, 0.1);">
-            <div><strong>${cat.icon} ${cat.name}</strong><small style="color:var(--text-secondary);display:block;">ID: ${cat.id}</small>${cat.description ? `<small style="color:var(--text-secondary);">📝 ${cat.description.substring(0, 50)}${cat.description.length > 50 ? '...' : ''}</small>` : '<small style="color:var(--text-tertiary);">⚠️ لا يوجد وصف</small>'}</div>
-            <div style="display:flex;gap:6px;">
-                <button class="btn-edit" onclick="editCategory('${cat.id}')" style="padding:6px 10px;background:var(--info);color:white;border:none;border-radius:6px;cursor:pointer;">✏️</button>
-                <button class="btn-delete" onclick="deleteCategory('${cat.id}')" style="padding:6px 10px;background:var(--danger);color:white;border:none;border-radius:6px;cursor:pointer;">🗑️</button>
+function removeFromCart(productId) {
+    cart = cart.filter(item => item.id !== productId);
+    saveCart(); updateCartUI(); renderCartItems();
+}
+
+function updateQuantity(productId, change) {
+    const item = cart.find(i => i.id === productId);
+    if (!item) return;
+    item.quantity += change;
+    if (item.quantity <= 0) removeFromCart(productId);
+    else { saveCart(); updateCartUI(); renderCartItems(); }
+}
+
+function saveCart() { localStorage.setItem('championsCart', JSON.stringify(cart)); }
+function updateCartUI() {
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const el = document.getElementById('cartCount');
+    if (el) el.textContent = count;
+}
+
+function renderCartItems() {
+    const container = document.getElementById('cartItems');
+    const footer = document.getElementById('cartFooter');
+    if (!container) return;
+    if (cart.length === 0) {
+        container.innerHTML = '<div class="empty-cart">🛒 السلة فارغة</div>';
+        if (footer) footer.style.display = 'none';
+        return;
+    }
+    container.innerHTML = cart.map(item => `
+        <div class="cart-item">
+            <img src="${getImageUrl(item.image)}" alt="${item.name}" loading="lazy" onerror="handleImageError(this)">
+            <div class="cart-item-info">
+                <div class="cart-item-name">${item.name}</div>
+                <div class="cart-item-price">${item.price}$</div>
             </div>
-        </li>`;
+            <div class="cart-item-qty">
+                <button class="qty-btn" onclick="updateQuantity(${item.id}, -1)">-</button>
+                <span>${item.quantity}</span>
+                <button class="qty-btn" onclick="updateQuantity(${item.id}, 1)">+</button>
+            </div>
+            <button class="remove-btn" onclick="removeFromCart(${item.id})">حذف</button>
+        </div>`).join('');
+    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalEl = document.getElementById('totalPrice');
+    if (totalEl) totalEl.textContent = total.toFixed(2) + '$';
+    if (footer) footer.style.display = 'block';
+}
+
+function openCartModal() { renderCartItems(); document.getElementById('cartModal').classList.add('active'); }
+function closeCartModal() { document.getElementById('cartModal').classList.remove('active'); }
+
+function orderViaWhatsApp(productId) {
+    const product = allProducts.find(p => p.id === productId);
+    if (!product) return;
+    const wa = storeData.storeInfo ? storeData.storeInfo.whatsapp : '963900000000';
+    const name = storeData.storeInfo ? storeData.storeInfo.name : 'Champions Store';
+    window.open(`https://wa.me/${wa}?text=${encodeURIComponent(`مرحباً ${name} 👋\n\nأريد طلب المنتج:\n📦 ${product.name}\n💰 السعر: ${product.price}$\n\nشكراً لكم!`)}`, '_blank');
+}
+
+function checkoutViaWhatsApp() {
+    if (cart.length === 0) return;
+    const wa = storeData.storeInfo ? storeData.storeInfo.whatsapp : '963900000000';
+    const name = storeData.storeInfo ? storeData.storeInfo.name : 'Champions Store';
+    let msg = `مرحباً ${name} 👋\n\nأريد طلب المنتجات التالية:\n\n`;
+    let total = 0;
+    cart.forEach((item, i) => {
+        const t = item.price * item.quantity;
+        total += t;
+        msg += `${i + 1}. 📦 ${item.name}\n   الكمية: ${item.quantity} | السعر: ${t}$\n\n`;
     });
-    list.innerHTML = html;
+    msg += `━━━━━━━━━━━━━━\n💰 المجموع الكلي: ${total.toFixed(2)}$\n\n📍 العنوان: \n📱 رقم الهاتف: \n\nشكراً لكم!`;
+    window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-function addCategory() {
-    const name = document.getElementById('newCatName').value.trim();
-    const icon = document.getElementById('newCatIcon').value.trim() || '📦';
-    const description = document.getElementById('newCatDescription').value.trim();
-    if (!name) return showToast('أدخل اسم الفئة', 'error');
-    const id = name.toLowerCase().replace(/\s+/g, '-');
-    if (storeData.categories.find(c => c.id === id)) return showToast('هذه الفئة موجودة', 'error');
-    storeData.categories.push({ id, name, icon, description });
-    saveToLocalStorage();
-    document.getElementById('newCatName').value = '';
-    document.getElementById('newCatIcon').value = '';
-    document.getElementById('newCatDescription').value = '';
-    renderCategoriesAdmin();
-    populateAdminCategoryFilter();
-    showToast('تمت إضافة الفئة ✓');
+function showNotification(message, type = 'success') {
+    const n = document.createElement('div');
+    n.textContent = message;
+    const bgColor = type === 'error' ? 'var(--danger)' : 'var(--success)';
+    n.style.cssText = `position:fixed;top:80px;right:20px;background:${bgColor};color:white;padding:12px 20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:3000;font-weight:600;`;
+    document.body.appendChild(n);
+    setTimeout(() => n.remove(), 2000);
 }
 
-function editCategory(id) {
-    const cat = storeData.categories.find(c => c.id === id);
-    if (!cat) return;
-    const newName = prompt('اسم الفئة:', cat.name); if (newName === null) return;
-    const newIcon = prompt('الأيقونة:', cat.icon); if (newIcon === null) return;
-    const newDescription = prompt('الوصف:', cat.description || ''); if (newDescription === null) return;
-    cat.name = newName.trim(); cat.icon = newIcon.trim(); cat.description = newDescription.trim();
-    saveToLocalStorage(); renderCategoriesAdmin(); populateAdminCategoryFilter();
-    showToast('تم تحديث الفئة ✓');
-}
-
-function deleteCategory(id) {
-    if (!confirm('حذف هذه الفئة؟')) return;
-    storeData.categories = storeData.categories.filter(c => c.id !== id);
-    saveToLocalStorage(); renderCategoriesAdmin(); populateAdminCategoryFilter();
-}
-
-function renderStoreInfo() {
-    if (!storeData || !storeData.storeInfo) return;
-    const info = storeData.storeInfo;
-    document.getElementById('storeName').value = info.name || '';
-    document.getElementById('storeTagline').value = info.tagline || '';
-    document.getElementById('storeWhatsapp').value = info.whatsapp || '';
-    document.getElementById('storeInstagram').value = info.instagram || '';
-    document.getElementById('storeEmail').value = info.email || '';
-    document.getElementById('storeLocation').value = info.location || '';
-}
-
-function saveStoreInfo() {
-    if (!storeData.storeInfo) storeData.storeInfo = {};
-    const info = storeData.storeInfo;
-    info.name = document.getElementById('storeName').value.trim();
-    info.tagline = document.getElementById('storeTagline').value.trim();
-    info.whatsapp = document.getElementById('storeWhatsapp').value.trim();
-    info.instagram = document.getElementById('storeInstagram').value.trim();
-    info.email = document.getElementById('storeEmail').value.trim();
-    info.location = document.getElementById('storeLocation').value.trim();
-    saveToLocalStorage(); showToast('تم الحفظ ✓');
-}
-
-function renderFooterInfo() {
-    if (!storeData || !storeData.storeInfo) return;
-    const info = storeData.storeInfo;
-    document.getElementById('footerDescription').value = info.footerDescription || '';
-    document.getElementById('footerCopyright').value = info.copyright || '';
-    document.getElementById('footerWhatsapp').value = info.whatsapp || '';
-    document.getElementById('footerInstagram').value = info.instagram || '';
-    document.getElementById('footerLocation').value = info.location || '';
-    document.getElementById('footerEmail').value = info.email || '';
-}
-
-function saveFooterInfo() {
-    if (!storeData.storeInfo) storeData.storeInfo = {};
-    const info = storeData.storeInfo;
-    info.footerDescription = document.getElementById('footerDescription').value.trim();
-    info.copyright = document.getElementById('footerCopyright').value.trim();
-    info.whatsapp = document.getElementById('footerWhatsapp').value.trim();
-    info.instagram = document.getElementById('footerInstagram').value.trim();
-    info.location = document.getElementById('footerLocation').value.trim();
-    info.email = document.getElementById('footerEmail').value.trim();
-    saveToLocalStorage(); showToast('تم حفظ إعدادات الفوتر ✓');
-}
-
-function renderAboutInfo() {
-    if (!storeData) return;
-    if (!storeData.about) storeData.about = { title: 'Champions Store Supplements', description: 'متجر متخصص.', features: '🏆 منتجات أوريجنال\n📍 مقرنا في دمشق' };
-    document.getElementById('aboutTitle').value = storeData.about.title || '';
-    document.getElementById('aboutDescription').value = storeData.about.description || '';
-    document.getElementById('aboutFeatures').value = storeData.about.features || '';
-}
-
-function saveAboutInfo() {
-    if (!storeData.about) storeData.about = {};
-    storeData.about.title = document.getElementById('aboutTitle').value.trim();
-    storeData.about.description = document.getElementById('aboutDescription').value.trim();
-    storeData.about.features = document.getElementById('aboutFeatures').value.trim();
-    saveToLocalStorage(); showToast('تم الحفظ ✓');
-}
-
-function renderLogoPreview() {
-    const preview = document.getElementById('logoPreview');
-    if (storeData && storeData.storeInfo && storeData.storeInfo.logo) preview.src = storeData.storeInfo.logo;
-    else preview.src = 'logo.png';
-}
-
-function handleLogoUpload(event) {
-    const file = event.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => { document.getElementById('logoPreview').src = e.target.result; document.getElementById('logoUrl').value = ''; };
-    reader.readAsDataURL(file);
-}
-
-function saveLogo() {
-    if (!storeData.storeInfo) storeData.storeInfo = {};
-    const url = document.getElementById('logoUrl').value.trim();
-    const preview = document.getElementById('logoPreview');
-    if (url) storeData.storeInfo.logo = url;
-    else if (preview.src && preview.src.startsWith('data:')) storeData.storeInfo.logo = preview.src;
-    else return showToast('يرجى رفع صورة أو إدخال رابط', 'error');
-    saveToLocalStorage(); showToast('تم حفظ اللوغو ✓');
-}
-
-function changePassword() {
-    const current = document.getElementById('currentPassword').value;
-    const newPass = document.getElementById('newPassword').value;
-    const confirm = document.getElementById('confirmPassword').value;
-    const saved = localStorage.getItem(PASSWORD_KEY) || DEFAULT_PASSWORD;
-    if (btoa(current) !== saved) return showToast('كلمة المرور الحالية غير صحيحة', 'error');
-    if (newPass.length < 6) return showToast('6 أحرف على الأقل', 'error');
-    if (newPass !== confirm) return showToast('غير متطابقتين', 'error');
-    localStorage.setItem(PASSWORD_KEY, btoa(newPass));
-    document.getElementById('currentPassword').value = '';
-    document.getElementById('newPassword').value = '';
-    document.getElementById('confirmPassword').value = '';
-    showToast('تم تغيير كلمة المرور ✓');
-}
-
-function exportData() {
-    if (!storeData) return showToast('لا توجد بيانات', 'error');
-    const blob = new Blob([JSON.stringify(storeData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'products.json'; a.click();
-    URL.revokeObjectURL(url); showToast('تم التصدير ✓');
-}
-
-function importData(event) {
-    const file = event.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const imported = JSON.parse(e.target.result);
-            if (imported.products && imported.storeInfo && imported.categories) {
-                storeData = imported; saveToLocalStorage(); renderAll(); showToast('تم الاستيراد ✓');
-            } else showToast('ملف JSON غير صالح', 'error');
-        } catch (err) { showToast('خطأ: ' + err.message, 'error'); }
-    };
-    reader.readAsText(file); event.target.value = '';
-}
-
-async function reorganizeIds() {
-    if (!storeData || !storeData.products) return showToast('لا توجد منتجات', 'error');
-    const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
-    if (!config || !config.token) return showToast('أعد إعداد GitHub أولاً', 'error');
-    if (!confirm('⚠️ سيتم إعادة ترقيم المنتجات من 1 وإعادة تسمية جميع الصور على GitHub. هل أنت متأكد؟')) return;
-    
-    showToast('🔄 جاري إعادة التهيئة...');
-    const changes = [];
-    storeData.products.forEach((product, index) => {
-        const newId = index + 1;
-        if (product.id !== newId) {
-            const oldFileName = extractFileName(product.image);
-            const newFileName = generateImageFileName({...product, id: newId});
-            changes.push({ product, oldId: product.id, newId, oldFileName, newFileName, needsRename: oldFileName && oldFileName !== newFileName && !product.image.startsWith('data:') });
-        }
-    });
-    storeData.products.forEach((product, index) => product.id = index + 1);
-    saveToLocalStorage(); filterAdminProducts();
-    
-    if (changes.some(c => c.needsRename)) {
-        try { await renameImagesOnGitHub(changes.filter(c => c.needsRename), config); showToast(`✅ تم إعادة تسمية الصور`); }
-        catch (e) { showToast(`⚠️ تم تحديث IDs لكن فشل تحديث بعض الصور: ${e.message}`, 'error'); }
-    } else showToast(`✅ تم إعادة تهيئة IDs`);
-}
-
-async function renameImagesOnGitHub(changes, config) {
-    const baseUrl = `https://api.github.com/repos/${config.username}/${config.repo}`;
-    const headers = { 'Authorization': `token ${config.token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
-    for (const change of changes) {
-        try {
-            let oldFilePath = null, folder = 'images';
-            for (const f of ['images', 'imgs']) {
-                try {
-                    const res = await fetch(`${baseUrl}/contents/${f}/${change.oldFileName}`, { headers });
-                    if (res.ok) { oldFilePath = `${f}/${change.oldFileName}`; folder = f; break; }
-                } catch (e) {}
+function setupEventListeners() {
+    const fc = document.getElementById('categoryFilters');
+    if (fc) {
+        fc.addEventListener('click', (e) => {
+            const btn = e.target.closest('.filter-btn');
+            if (btn) {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentCategory = btn.dataset.category;
+                applyFiltersAndSort();
+                resetAndRender();
+                showCategoryDescription(currentCategory);
             }
-            if (!oldFilePath) continue;
-            const fileRes = await fetch(`${baseUrl}/contents/${oldFilePath}`, { headers });
-            if (!fileRes.ok) throw new Error('فشل جلب الملف');
-            const fileData = await fileRes.json();
-            const newFilePath = `${folder}/${change.newFileName}`;
-            const uploadRes = await fetch(`${baseUrl}/contents/${newFilePath}`, {
-                method: 'PUT', headers, body: JSON.stringify({ message: `🔄 إعادة تسمية: ${change.oldFileName} → ${change.newFileName}`, content: fileData.content, branch: 'main' })
-            });
-            if (!uploadRes.ok) throw new Error('فشل رفع الملف الجديد');
-            await fetch(`${baseUrl}/contents/${oldFilePath}`, {
-                method: 'DELETE', headers, body: JSON.stringify({ message: `🗑️ حذف بعد إعادة التسمية`, sha: fileData.sha, branch: 'main' })
-            });
-            change.product.image = newFilePath;
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (error) { console.error(`❌ خطأ في ${change.product.name}:`, error); }
-    }
-    saveToLocalStorage();
-}
-
-function saveGitHubConfig() {
-    const config = { username: document.getElementById('githubUsername').value.trim(), repo: document.getElementById('githubRepo').value.trim(), token: document.getElementById('githubToken').value.trim() };
-    if (!config.username || !config.repo || !config.token) return showToast('يرجى ملء جميع الحقول', 'error');
-    localStorage.setItem(GITHUB_STORAGE_KEY, JSON.stringify(config)); showToast('تم حفظ الإعدادات ✓');
-}
-
-function loadGitHubConfig() {
-    const saved = localStorage.getItem(GITHUB_STORAGE_KEY);
-    if (saved) { try { const config = JSON.parse(saved); document.getElementById('githubUsername').value = config.username || ''; document.getElementById('githubRepo').value = config.repo || ''; document.getElementById('githubToken').value = config.token || ''; } catch (e) {} }
-}
-
-async function publishDirectly() {
-    const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
-    if (!config || !config.token) return showToast('أدخل إعدادات GitHub أولاً', 'error');
-    if (!confirm('⚠️ نشر التعديلات؟')) return;
-    const publishBtn = document.querySelector('.btn-publish');
-    const originalText = publishBtn.textContent;
-    publishBtn.disabled = true; publishBtn.textContent = '⏳...';
-    try {
-        const baseUrl = `https://api.github.com/repos/${config.username}/${config.repo}`;
-        const headers = { 'Authorization': `token ${config.token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
-        const repoRes = await fetch(baseUrl, { headers }); if (!repoRes.ok) throw new Error('فشل الوصول');
-        const repoData = await repoRes.json(); const defaultBranch = repoData.default_branch || 'main';
-        const fileRes = await fetch(`${baseUrl}/contents/products.json?ref=${defaultBranch}`, { headers }); if (!fileRes.ok) throw new Error('فشل القراءة');
-        const fileData = await fileRes.json();
-        const updateRes = await fetch(`${baseUrl}/contents/products.json`, {
-            method: 'PUT', headers, body: JSON.stringify({ message: '🤖 تحديث', content: btoa(unescape(encodeURIComponent(JSON.stringify(storeData, null, 2)))), sha: fileData.sha, branch: defaultBranch })
         });
-        if (!updateRes.ok) throw new Error('فشل التحديث');
-        showToast('✅ تم النشر!');
-    } catch (e) { showToast('❌ خطأ: ' + e.message, 'error'); }
-    finally { publishBtn.disabled = false; publishBtn.textContent = originalText; }
+    }
+    const si = document.getElementById('searchInput');
+    if (si) {
+        let to;
+        si.addEventListener('input', (e) => {
+            clearTimeout(to);
+            to = setTimeout(() => {
+                searchQuery = e.target.value.toLowerCase();
+                applyFiltersAndSort();
+                resetAndRender();
+            }, 300);
+        });
+    }
+    const cb = document.getElementById('cartBtn');
+    if (cb) cb.addEventListener('click', openCartModal);
+    const cc = document.getElementById('closeCart');
+    if (cc) cc.addEventListener('click', closeCartModal);
+    const chb = document.getElementById('checkoutBtn');
+    if (chb) chb.addEventListener('click', checkoutViaWhatsApp);
+    const cp = document.getElementById('closeProduct');
+    if (cp) cp.addEventListener('click', closeProductModal);
+    document.querySelectorAll('.modal').forEach(m => {
+        m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('active'); });
+    });
+    const mt = document.getElementById('menuToggle');
+    if (mt) mt.addEventListener('click', () => document.querySelector('.nav-links').classList.toggle('active'));
+    document.querySelectorAll('.nav-links a').forEach(l => {
+        l.addEventListener('click', () => document.querySelector('.nav-links').classList.remove('active'));
+    });
 }
 
-async function fixAllImageUrls() {
-    if (!storeData || !storeData.products) return showToast('لا توجد منتجات', 'error');
-    const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
-    if (!config || !config.token) return showToast('أعد إعداد GitHub أولاً', 'error');
-    if (!confirm('⚠️ سيتم فحص وإعادة تسمية الصور القديمة لتطابق النظام الجديد. هل أنت متأكد؟')) return;
-    
-    showToast('🔍 جاري فحص الصور...');
-    const baseUrl = `https://api.github.com/repos/${config.username}/${config.repo}`;
-    const headers = { 'Authorization': `token ${config.token}`, 'Accept': 'application/vnd.github.v3+json' };
-    const allFiles = new Map();
-    
-    for (const folder of ['images', 'imgs', '']) {
-        try {
-            const url = folder ? `${baseUrl}/contents/${folder}` : `${baseUrl}/contents/`;
-            const res = await fetch(url, { headers });
-            if (res.ok) {
-                const data = await res.json();
-                data.filter(f => f.type === 'file' && /\.(webp|png|jpg|jpeg)$/i.test(f.name)).forEach(f => {
-                    allFiles.set(f.name, { folder: folder || '', path: folder ? `${folder}/${f.name}` : f.name, sha: f.sha, name: f.name });
-                });
-            }
-        } catch (e) {}
-    }
-    
-    let fixedCount = 0, renamedCount = 0, failedCount = 0;
-    for (const product of storeData.products) {
-        if (!product.image || product.image.startsWith('data:')) continue;
-        const currentFileName = extractFileName(product.image);
-        const expectedFileName = generateImageFileName(product);
-        if (currentFileName === expectedFileName) {
-            const found = allFiles.get(expectedFileName);
-            if (found) {
-                const correctPath = `${found.folder}/${expectedFileName}`;
-                if (product.image !== correctPath) { product.image = correctPath; fixedCount++; }
-            } else failedCount++;
-            continue;
-        }
-        let foundFile = allFiles.get(currentFileName);
-        if (!foundFile) {
-            for (const [filename, file] of allFiles.entries()) {
-                const baseName = filename.replace(/\.(webp|png|jpg|jpeg)$/i, '');
-                if (baseName === `${product.id}` || baseName === `product-${product.id}` || baseName.startsWith(`${product.id}-`) || baseName.startsWith(`product-${product.id}-`)) {
-                    foundFile = file; break;
-                }
-            }
-        }
-        if (foundFile) {
-            try {
-                const fileRes = await fetch(`${baseUrl}/contents/${foundFile.path}`, { headers });
-                if (!fileRes.ok) continue;
-                const fileData = await fileRes.json();
-                const newPath = `${foundFile.folder}/${expectedFileName}`;
-                await fetch(`${baseUrl}/contents/${newPath}`, {
-                    method: 'PUT', headers, body: JSON.stringify({ message: `🔄 إعادة تسمية`, content: fileData.content, branch: 'main' })
-                });
-                await fetch(`${baseUrl}/contents/${foundFile.path}`, {
-                    method: 'DELETE', headers, body: JSON.stringify({ message: `🗑️ حذف`, sha: fileData.sha, branch: 'main' })
-                });
-                product.image = newPath;
-                renamedCount++;
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            } catch (e) { failedCount++; }
-        } else failedCount++;
-    }
-    saveToLocalStorage(); filterAdminProducts();
-    showToast(`✅ تم: ${fixedCount} تصحيح، ${renamedCount} إعادة تسمية`);
-}
-
-// ✅ الدالة المفقودة - فتح مودال تحويل الصور
-function showConvertModal() {
-    const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
-    if (!config || !config.token) {
-        showToast('أعد إعداد GitHub أولاً', 'error');
-        return;
-    }
-    
-    if (!storeData || !storeData.products) {
-        showToast('لا توجد منتجات', 'error');
-        return;
-    }
-    
-    const categorySelect = document.getElementById('convertCategory');
-    categorySelect.innerHTML = '<option value="all">جميع الفئات</option>';
-    storeData.categories.forEach(cat => {
-        if (cat.id !== 'all') {
-            categorySelect.innerHTML += `<option value="${cat.id}">${cat.icon} ${cat.name}</option>`;
+document.addEventListener('DOMContentLoaded', () => {
+    init();
+    const navbar = document.getElementById('navbar');
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                if (window.scrollY > 50) navbar.classList.add('scrolled');
+                else navbar.classList.remove('scrolled');
+                ticking = false;
+            });
+            ticking = true;
         }
     });
-    
-    const base64Count = storeData.products.filter(p => p.image && p.image.startsWith('data:image')).length;
-    document.getElementById('base64Count').textContent = `صور Base64: ${base64Count}`;
-    document.getElementById('externalCount').textContent = `صور خارجية: ${storeData.products.length - base64Count}`;
-    
-    document.getElementById('convertModal').classList.add('active');
-}
-
-function closeConvertModal() {
-    document.getElementById('convertModal').classList.remove('active');
-}
-
-async function convertAllImagesToWebP() {
-    const category = document.getElementById('convertCategory').value;
-    const deleteOld = document.getElementById('deleteOldImages').checked;
-    const maxSizeKB = parseInt(document.getElementById('maxImageSize').value) || 150;
-    let productsToConvert = category === 'all' ? storeData.products : storeData.products.filter(p => p.category === category);
-    const base64Products = productsToConvert.filter(p => p.image && p.image.startsWith('data:image'));
-    if (base64Products.length === 0) return showToast('لا توجد صور Base64', 'error');
-    const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
-    if (!config || !config.token) return showToast('أعد إعداد GitHub أولاً', 'error');
-    if (!confirm(`⚠️ سيتم تحويل ${base64Products.length} صورة. هل أنت متأكد؟`)) return;
-    
-    closeConvertModal();
-    const progressBox = document.createElement('div');
-    progressBox.style.cssText = `position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(18, 18, 26, 0.98); backdrop-filter: blur(20px); padding: 30px; border-radius: 16px; border: 2px solid var(--gold); box-shadow: 0 20px 60px rgba(0,0,0,0.5); z-index: 9999; min-width: 500px; max-width: 90vw; max-height: 85vh; overflow-y: auto; color: var(--text);`;
-    progressBox.innerHTML = `
-        <h3 style="color: var(--gold); margin-bottom: 16px; text-align: center;">🖼️ جاري تحويل الصور</h3>
-        <div style="background: rgba(255,255,255,0.1); height: 10px; border-radius: 10px; overflow: hidden; margin-bottom: 12px;"><div id="convProgress" style="height: 100%; background: var(--gradient-gold); width: 0%; transition: width 0.3s;"></div></div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 0.9rem;"><span id="convCount">0 / ${base64Products.length}</span><span id="convSize" style="color: var(--success);">0 MB توفير</span></div>
-        <p id="convStatus" style="text-align: center; margin-bottom: 16px; color: var(--text-secondary);">بدء العملية...</p>
-        <div id="convLog" style="font-size: 0.8rem; max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; font-family: monospace;"></div>`;
-    document.body.appendChild(progressBox);
-    
-    const progressBar = document.getElementById('convProgress');
-    const countEl = document.getElementById('convCount');
-    const sizeEl = document.getElementById('convSize');
-    const statusEl = document.getElementById('convStatus');
-    const logEl = document.getElementById('convLog');
-    function addLog(msg, type = 'info') {
-        const colors = { info: 'var(--text-secondary)', success: 'var(--success)', error: 'var(--danger)', warning: 'var(--warning)', gold: 'var(--gold)' };
-        logEl.innerHTML += `<div style="color: ${colors[type]}; margin-bottom: 3px;">[${new Date().toLocaleTimeString('en-US', { hour12: false })}] ${msg}</div>`;
-        logEl.scrollTop = logEl.scrollHeight;
-    }
-    
-    const baseUrl = `https://api.github.com/repos/${config.username}/${config.repo}`;
-    const headers = { 'Authorization': `token ${config.token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
-    const existingFiles = new Map();
-    try {
-        for (const folder of ['images', 'imgs']) {
-            const res = await fetch(`${baseUrl}/contents/${folder}`, { headers });
-            if (res.ok) {
-                const data = await res.json();
-                data.filter(f => f.type === 'file').forEach(f => existingFiles.set(f.name, { path: `${folder}/${f.name}`, sha: f.sha, folder }));
-            }
-        }
-    } catch (e) {}
-    
-    let totalSizeSaved = 0, convertedCount = 0, failedCount = 0;
-    for (let i = 0; i < base64Products.length; i++) {
-        const product = base64Products[i];
-        progressBar.style.width = `${((i + 1) / base64Products.length) * 100}%`;
-        countEl.textContent = `${i + 1} / ${base64Products.length}`;
-        statusEl.textContent = `تحويل: ${product.name}`;
-        addLog(`🔄 [${i + 1}/${base64Products.length}] ${product.name} (ID: ${product.id})`, 'gold');
-        try {
-            const blob = await base64ToBlob(product.image);
-            const originalSize = blob.size;
-            let compressedFile;
-            try { compressedFile = await imageCompression(blob, { maxSizeMB: maxSizeKB / 1024, maxWidthOrHeight: 800, useWebWorker: true, fileType: 'image/webp' }); }
-            catch (e) { compressedFile = blob; }
-            
-            let fileName = generateImageFileName(product);
-            let baseName = fileName.replace(/\.webp$/i, '');
-            if (!baseName || baseName.trim() === '') { baseName = `product-${product.id}`; fileName = `${baseName}.webp`; }
-            
-            let counter = 1, finalName = fileName;
-            while (existingFiles.has(finalName)) { finalName = `${baseName}-${counter}.webp`; counter++; }
-            fileName = finalName;
-            existingFiles.set(fileName, { path: `images/${fileName}`, sha: '', folder: 'images' });
-            
-            const reader = new FileReader();
-            const webpBase64 = await new Promise((resolve, reject) => { reader.onload = () => resolve(reader.result.split(',')[1]); reader.onerror = reject; reader.readAsDataURL(compressedFile); });
-            
-            const folder = 'images';
-            const filePath = `${folder}/${fileName}`;
-            let uploadBody = { message: `🖼️ رفع/تحديث ${product.name} (${fileName})`, content: webpBase64, branch: 'main' };
-            
-            if (existingFiles.has(fileName) && existingFiles.get(fileName).sha) {
-                uploadBody.sha = existingFiles.get(fileName).sha;
-            }
-            
-            const uploadResponse = await fetch(`${baseUrl}/contents/${filePath}`, { method: 'PUT', headers, body: JSON.stringify(uploadBody) });
-            if (!uploadResponse.ok) { const errData = await uploadResponse.json().catch(() => ({})); throw new Error(`فشل الرفع: ${errData.message || uploadResponse.status}`); }
-            
-            product.image = filePath;
-            totalSizeSaved += (originalSize - compressedFile.size);
-            convertedCount++;
-            sizeEl.textContent = `${(totalSizeSaved / 1024 / 1024).toFixed(2)} MB توفير`;
-            addLog(`   ✅ تم بنجاح!`, 'success');
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (error) {
-            failedCount++;
-            addLog(`   ❌ خطأ: ${error.message}`, 'error');
-        }
-    }
-    
-    if (deleteOld) {
-        storeData.products.forEach(p => { if (p.image && p.image.startsWith('data:image')) p.image = ''; });
-    }
-    saveToLocalStorage();
-    
-    progressBox.innerHTML = `
-        <h3 style="color: var(--gold); margin-bottom: 16px; text-align: center;">${failedCount === 0 ? '✅' : '⚠️'} اكتملت العملية</h3>
-        <pre style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; font-size: 0.9rem; white-space: pre-wrap; color: var(--text); margin-bottom: 16px;">📊 تم تحويل: ${convertedCount}\n❌ فشل: ${failedCount}\n💾 توفير: ${(totalSizeSaved / 1024 / 1024).toFixed(2)} MB</pre>
-        <div style="display: flex; gap: 10px;">
-            <button onclick="this.parentElement.parentElement.remove()" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.1); color: var(--text); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; font-weight: 700; cursor: pointer;">إغلاق</button>
-            ${convertedCount > 0 ? `<button onclick="publishDirectly(); this.parentElement.parentElement.remove()" style="flex: 1; padding: 12px; background: var(--success); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">🚀 نشر الآن</button>` : ''}
-        </div>`;
-    showToast(`✅ تم تحويل ${convertedCount} صورة`);
-}
-
-async function base64ToBlob(base64String) { const response = await fetch(base64String); return await response.blob(); }
-
-function testAllImageUrls() {
-    if (!storeData || !storeData.products) return showToast('لا توجد منتجات', 'error');
-    showToast('🔍 جاري الفحص...');
-    let ok = 0, failed = 0, base64 = 0;
-    const failedList = [];
-    storeData.products.slice(0, 20).forEach(async product => {
-        if (!product.image) return;
-        if (product.image.startsWith('data:')) { base64++; return; }
-        const img = new Image();
-        img.onload = () => { ok++; };
-        img.onerror = () => { failed++; failedList.push(`${product.name}: ${product.image}`); };
-        img.src = product.image;
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', function (e) {
+            e.preventDefault();
+            const t = document.querySelector(this.getAttribute('href'));
+            if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
     });
-    setTimeout(() => {
-        let report = `📊 فحص 20 منتج:\n✅ ناجحة: ${ok}\n❌ فاشلة: ${failed}\n📦 Base64: ${base64}`;
-        if (failedList.length > 0) report += `\n\n❌ الفاشلة:\n${failedList.join('\n')}`;
-        console.log(report); alert(report);
-    }, 3000);
-}
-
-function showToast(msg, type = 'success') {
-    const t = document.getElementById('toast'); if (!t) return;
-    t.textContent = msg; t.style.background = type === 'error' ? 'var(--danger)' : 'var(--success)';
-    t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-document.addEventListener('click', (e) => { if (e.target.dataset && e.target.dataset.tab === 'github') setTimeout(loadGitHubConfig, 100); });
-document.getElementById('productModal').addEventListener('click', (e) => { if (e.target.id === 'productModal') closeProductModal(); });
-document.getElementById('convertModal').addEventListener('click', (e) => { if (e.target.id === 'convertModal') closeConvertModal(); });
+});
