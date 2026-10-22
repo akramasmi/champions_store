@@ -6,7 +6,6 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta name="description" content="Champions Store - متجر مكملات غذائية فاخرة">
     <title>Champions Store | مكملات غذائية فاخرة</title>
-    <!-- ✅ أيقونة إيموجي لتجنب خطأ 404 لـ favicon.ico -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,8 +17,8 @@
     <nav class="navbar" id="navbar">
         <div class="container nav-container">
             <div class="logo-area">
-                <!-- ✅ إخفاء الصورة تلقائياً إذا لم تكن موجودة في GitHub -->
-                <img src="logo.png" alt="Champions Store" class="nav-logo" loading="eager" onerror="this.style.display='none'">
+                <!-- ✅ اللوغو: يبدأ بـ logo.png المحلي، ولا يُخفى أبداً -->
+                <img src="logo.png" alt="Champions Store" class="nav-logo" loading="eager" onerror="this.onerror=null;this.src='logo.png';">
                 <span class="brand-name">Champions <span class="gold">Store</span></span>
             </div>
             <ul class="nav-links">
@@ -110,7 +109,8 @@
                     </ul>
                 </div>
                 <div class="about-image">
-                    <img src="logo.png" alt="Champions Store" loading="lazy" onerror="this.style.display='none'">
+                    <!-- ✅ اللوغو: يبدأ بـ logo.png ولا يُخفى -->
+                    <img src="logo.png" alt="Champions Store" loading="lazy" onerror="this.onerror=null;this.src='logo.png';">
                 </div>
             </div>
         </div>
@@ -130,7 +130,8 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-brand">
-                    <img src="logo.png" alt="Champions Store" class="footer-logo" loading="lazy" onerror="this.style.display='none'">
+                    <!-- ✅ اللوغو: يبدأ بـ logo.png ولا يُخفى -->
+                    <img src="logo.png" alt="Champions Store" class="footer-logo" loading="lazy" onerror="this.onerror=null;this.src='logo.png';">
                     <h3>Champions <span class="gold">Store</span></h3>
                     <p id="footerDescription">مكملات غذائية فاخرة</p>
                 </div>
