@@ -21,11 +21,42 @@ function sanitizeFileName(name) {
         .substring(0, 50);
 }
 
+// ✅ دالة توليد اسم الصورة - نسخة محسّنة
 function generateImageFileName(product) {
-    const sanitizedName = sanitizeFileName(product.name);
+    let sanitizedName = sanitizeFileName(product.name);
+    
+    // إذا كان الاسم فارغاً بعد التنظيف (عربي فقط)، استخدم ID
+    if (!sanitizedName || sanitizedName.trim() === '') {
+        sanitizedName = `product-${product.id}`;
+    }
+    
     return `${sanitizedName}-${product.id}.webp`;
 }
 
+// ✅ دالة تنظيف اسم الملف - نسخة محسّنة
+function sanitizeFileName(name) {
+    if (!name) return '';
+    
+    return name
+        .toLowerCase()
+        .trim()
+        // تحويل الأحرف العربية إلى近似 أصوات (اختياري)
+        .replace(/[أإآ]/g, 'a')
+        .replace(/[ة]/g, 'h')
+        .replace(/[ى]/g, 'a')
+        .replace(/[ؤ]/g, 'o')
+        .replace(/[ئ]/g, 'e')
+        // حذف الأحرف الخاصة
+        .replace(/[^a-z0-9\s-]/g, '')
+        // المسافات إلى شرطات
+        .replace(/\s+/g, '-')
+        // شرطات متعددة إلى واحدة
+        .replace(/-+/g, '-')
+        // حذف الشرطات من الأطراف
+        .replace(/^-|-$/g, '')
+        // تحديد الطول الأقصى
+        .substring(0, 40);
+}
 function extractFileName(imagePath) {
     if (!imagePath) return null;
     return imagePath.split('/').pop().split('?')[0];
@@ -1145,6 +1176,7 @@ function closeConvertModal() {
     document.getElementById('convertModal').classList.remove('active');
 }
 
+// ✅ أداة تحويل الصور - نسخة محسّنة بالكامل
 async function convertAllImagesToWebP() {
     const category = document.getElementById('convertCategory').value;
     const deleteOld = document.getElementById('deleteOldImages').checked;
@@ -1156,127 +1188,308 @@ async function convertAllImagesToWebP() {
     }
     
     const base64Products = productsToConvert.filter(p => p.image && p.image.startsWith('data:image'));
-    if (base64Products.length === 0) return showToast('لا توجد صور Base64', 'error');
-    if (!confirm(`تحويل ${base64Products.length} صورة؟\n\nسيتم تسميتها: {اسم-المنتج}-{id}.webp`)) return;
+    
+    if (base64Products.length === 0) {
+        showToast('لا توجد صور Base64 للتحويل', 'error');
+        return;
+    }
+    
+    const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
+    if (!config || !config.token) {
+        showToast('أعد إعداد GitHub أولاً', 'error');
+        return;
+    }
+    
+    if (!confirm(`⚠️ سيتم تحويل ${base64Products.length} صورة إلى WebP\n\nالتسمية: {اسم-المنتج}-{id}.webp\n\nهل أنت متأكد؟`)) {
+        return;
+    }
     
     closeConvertModal();
     
-    const progressContainer = document.createElement('div');
-    progressContainer.className = 'progress-container active';
-    progressContainer.innerHTML = `
-        <div class="progress-title">🖼️ جاري التحويل</div>
-        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-        <div class="progress-text" id="progressText">بدء...</div>
-        <div class="progress-stats">
-            <span id="progressCount">0 / ${base64Products.length}</span>
-            <span id="progressSize">0 MB</span>
-        </div>
+    // ✅ إنشاء نافذة التقدم
+    const progressBox = document.createElement('div');
+    progressBox.style.cssText = `
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: rgba(18, 18, 26, 0.98); backdrop-filter: blur(20px);
+        padding: 30px; border-radius: 16px; border: 2px solid var(--gold);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5); z-index: 9999;
+        min-width: 500px; max-width: 90vw; max-height: 85vh; overflow-y: auto;
+        color: var(--text);
     `;
-    document.body.appendChild(progressContainer);
+    progressBox.innerHTML = `
+        <h3 style="color: var(--gold); margin-bottom: 16px; text-align: center;">🖼️ جاري تحويل الصور</h3>
+        <div style="background: rgba(255,255,255,0.1); height: 10px; border-radius: 10px; overflow: hidden; margin-bottom: 12px;">
+            <div id="convProgress" style="height: 100%; background: var(--gradient-gold); width: 0%; transition: width 0.3s;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 0.9rem;">
+            <span id="convCount">0 / ${base64Products.length}</span>
+            <span id="convSize" style="color: var(--success);">0 MB توفير</span>
+        </div>
+        <p id="convStatus" style="text-align: center; margin-bottom: 16px; color: var(--text-secondary);">بدء العملية...</p>
+        <div id="convLog" style="font-size: 0.8rem; max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; font-family: monospace;"></div>
+    `;
+    document.body.appendChild(progressBox);
     
-    const progressFill = document.getElementById('progressFill');
-    const progressText = document.getElementById('progressText');
-    const progressCount = document.getElementById('progressCount');
-    const progressSize = document.getElementById('progressSize');
+    const progressBar = document.getElementById('convProgress');
+    const countEl = document.getElementById('convCount');
+    const sizeEl = document.getElementById('convSize');
+    const statusEl = document.getElementById('convStatus');
+    const logEl = document.getElementById('convLog');
     
-    let totalSizeSaved = 0;
-    let convertedCount = 0;
+    function addLog(msg, type = 'info') {
+        const colors = {
+            info: 'var(--text-secondary)',
+            success: 'var(--success)',
+            error: 'var(--danger)',
+            warning: 'var(--warning)',
+            gold: 'var(--gold)'
+        };
+        const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+        logEl.innerHTML += `<div style="color: ${colors[type]}; margin-bottom: 3px;">[${time}] ${msg}</div>`;
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+    
+    // ✅ جلب قائمة الملفات الموجودة على GitHub
+    addLog('📡 جاري جلب الملفات الموجودة...', 'gold');
+    statusEl.textContent = 'جاري التحقق من الملفات الموجودة...';
+    
+    const baseUrl = `https://api.github.com/repos/${config.username}/${config.repo}`;
+    const headers = {
+        'Authorization': `token ${config.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+    };
+    
+    const existingFiles = new Map(); // filename → { path, sha, folder }
     
     try {
-        const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY));
-        const baseUrl = `https://api.github.com/repos/${config.username}/${config.repo}`;
-        const headers = {
-            'Authorization': `token ${config.token}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json'
-        };
-        
-        for (let i = 0; i < base64Products.length; i++) {
-            const product = base64Products[i];
-            const progress = ((i + 1) / base64Products.length) * 100;
-            
-            progressFill.style.width = `${progress}%`;
-            progressText.textContent = `تحويل: ${product.name}`;
-            progressCount.textContent = `${i + 1} / ${base64Products.length}`;
-            
+        for (const folder of ['images', 'imgs']) {
             try {
-                const blob = await base64ToBlob(product.image);
-                const originalSize = blob.size;
-                
-                const compressedFile = await imageCompression(blob, {
-                    maxSizeMB: maxSizeKB / 1024,
-                    maxWidthOrHeight: 800,
-                    useWebWorker: true,
-                    fileType: 'image/webp'
-                });
-                
-                // ✅ التسمية الجديدة
-                const fileName = generateImageFileName(product);
-                
-                const reader = new FileReader();
-                const webpBase64 = await new Promise((resolve, reject) => {
-                    reader.onload = () => resolve(reader.result.split(',')[1]);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(compressedFile);
-                });
-                
-                // ✅ الرفع إلى images/ فقط
-                const uploadResponse = await fetch(`${baseUrl}/contents/images/${fileName}`, {
-                    method: 'PUT',
-                    headers,
-                    body: JSON.stringify({
-                        message: `🖼️ رفع ${product.name} (${fileName})`,
-                        content: webpBase64,
-                        branch: 'main'
-                    })
-                });
-                
-                if (!uploadResponse.ok) throw new Error('فشل الرفع');
-                
-                product.image = `images/${fileName}`;
-                totalSizeSaved += (originalSize - compressedFile.size);
-                convertedCount++;
-                
-                progressSize.textContent = `${(totalSizeSaved / 1024 / 1024).toFixed(2)} MB`;
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-            } catch (error) {
-                console.error(`خطأ: ${product.name}`, error);
-                progressText.textContent = `خطأ: ${product.name}`;
-            }
-        }
-        
-        if (deleteOld) {
-            storeData.products.forEach(p => {
-                if (p.image && p.image.startsWith('data:image')) {
-                    p.image = PLACEHOLDER_IMAGE;
+                const res = await fetch(`${baseUrl}/contents/${folder}`, { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    data.filter(f => f.type === 'file').forEach(f => {
+                        existingFiles.set(f.name, { path: `${folder}/${f.name}`, sha: f.sha, folder });
+                    });
+                    addLog(`✅ ${folder}: ${data.filter(f => f.type === 'file').length} ملف`, 'success');
                 }
-            });
+            } catch (e) {}
         }
-        
-        saveToLocalStorage();
-        await publishDirectly();
-        
-        progressContainer.innerHTML = `
-            <div class="progress-title">✅ تم!</div>
-            <div class="progress-text">
-                تم تحويل ${convertedCount} صورة<br>
-                <strong style="color: var(--success);">توفير: ${(totalSizeSaved / 1024 / 1024).toFixed(2)} MB</strong><br>
-                <small style="color: var(--text-secondary);">التسمية: {اسم-المنتج}-{id}.webp</small>
-            </div>
-            <button class="btn-save" onclick="this.parentElement.remove()" style="margin-top: 16px; width: 100%;">حسناً</button>
-        `;
-        
-        showToast(`✅ تم تحويل ${convertedCount} صورة`);
-        
-    } catch (error) {
-        progressContainer.innerHTML = `
-            <div class="progress-title">❌ خطأ</div>
-            <div class="progress-text" style="color: var(--danger);">${error.message}</div>
-            <button class="btn-save" onclick="this.parentElement.remove()" style="margin-top: 16px; width: 100%;">حسناً</button>
-        `;
-        showToast('❌ خطأ: ' + error.message, 'error');
+    } catch (e) {
+        addLog(`⚠️ خطأ في جلب الملفات: ${e.message}`, 'warning');
     }
+    
+    addLog(`📊 إجمالي الملفات الموجودة: ${existingFiles.size}`, 'gold');
+    
+    // ✅ بدء التحويل
+    let totalSizeSaved = 0;
+    let convertedCount = 0;
+    let failedCount = 0;
+    const usedNames = new Set(); // لتجنب التعارض
+    const detailedReport = [];
+    
+    // أضف الأسماء الموجودة مسبقاً
+    existingFiles.forEach((_, name) => usedNames.add(name));
+    
+    for (let i = 0; i < base64Products.length; i++) {
+        const product = base64Products[i];
+        const progress = ((i + 1) / base64Products.length) * 100;
+        
+        progressBar.style.width = `${progress}%`;
+        countEl.textContent = `${i + 1} / ${base64Products.length}`;
+        statusEl.textContent = `تحويل: ${product.name}`;
+        
+        addLog(``, 'info');
+        addLog(`🔄 [${i + 1}/${base64Products.length}] ${product.name} (ID: ${product.id})`, 'gold');
+        
+        try {
+            // ✅ الخطوة 1: تحويل Base64 إلى Blob
+            addLog(`   📥 تحويل Base64 إلى Blob...`, 'info');
+            const blob = await base64ToBlob(product.image);
+            const originalSize = blob.size;
+            addLog(`   📊 الحجم الأصلي: ${(originalSize / 1024).toFixed(1)} KB`, 'info');
+            
+            // ✅ الخطوة 2: ضغط وتحويل إلى WebP
+            addLog(`   🗜️ ضغط وتحويل إلى WebP...`, 'info');
+            const options = {
+                maxSizeMB: maxSizeKB / 1024,
+                maxWidthOrHeight: 800,
+                useWebWorker: true,
+                fileType: 'image/webp'
+            };
+            
+            let compressedFile;
+            try {
+                compressedFile = await imageCompression(blob, options);
+            } catch (compError) {
+                addLog(`   ⚠️ فشل الضغط، استخدام الصورة الأصلية...`, 'warning');
+                // في حال فشل الضغط، استخدم الصورة الأصلية كـ WebP
+                compressedFile = blob;
+            }
+            
+            const compressedSize = compressedFile.size;
+            addLog(`   📊 الحجم المضغوط: ${(compressedSize / 1024).toFixed(1)} KB`, 'success');
+            
+            // ✅ الخطوة 3: توليد اسم فريد
+            let fileName = generateImageFileName(product);
+            let baseName = fileName.replace(/\.webp$/i, '');
+            
+            // إذا كان الاسم فارغاً (منتج عربي فقط)، استخدم ID
+            if (!baseName || baseName.trim() === '') {
+                baseName = `product-${product.id}`;
+                fileName = `${baseName}.webp`;
+                addLog(`   ⚠️ اسم المنتج فارغ، استخدام: ${fileName}`, 'warning');
+            }
+            
+            // تجنب التعارض: إذا كان الاسم مستخدماً، أضف رقم
+            let counter = 1;
+            let finalName = fileName;
+            while (usedNames.has(finalName)) {
+                finalName = `${baseName}-${counter}.webp`;
+                counter++;
+            }
+            fileName = finalName;
+            usedNames.add(fileName);
+            
+            addLog(`   📝 اسم الملف: ${fileName}`, 'info');
+            
+            // ✅ الخطوة 4: تحويل إلى Base64 للرفع
+            addLog(`   📤 جاري التحويل للرفع...`, 'info');
+            const reader = new FileReader();
+            const webpBase64 = await new Promise((resolve, reject) => {
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(compressedFile);
+            });
+            
+            // ✅ الخطوة 5: التحقق من وجود ملف بنفس الاسم
+            const folder = 'images';
+            const filePath = `${folder}/${fileName}`;
+            
+            if (existingFiles.has(fileName)) {
+                addLog(`   ⚠️ يوجد ملف بنفس الاسم، جاري الاستبدال...`, 'warning');
+                try {
+                    // حذف الملف القديم
+                    const existingFile = existingFiles.get(fileName);
+                    const delRes = await fetch(`${baseUrl}/contents/${existingFile.path}`, {
+                        method: 'DELETE',
+                        headers,
+                        body: JSON.stringify({
+                            message: `🗑️ استبدال ملف قديم: ${fileName}`,
+                            sha: existingFile.sha,
+                            branch: 'main'
+                        })
+                    });
+                    
+                    if (delRes.ok) {
+                        addLog(`   ✓ تم حذف الملف القديم`, 'success');
+                    }
+                } catch (e) {
+                    addLog(`   ⚠️ فشل حذف القديم: ${e.message}`, 'warning');
+                }
+            }
+            
+            // ✅ الخطوة 6: رفع الصورة الجديدة
+            addLog(`   🚀 جاري الرفع إلى GitHub...`, 'info');
+            const uploadResponse = await fetch(`${baseUrl}/contents/${filePath}`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({
+                    message: `🖼️ رفع ${product.name} (${fileName})`,
+                    content: webpBase64,
+                    branch: 'main'
+                })
+            });
+            
+            if (!uploadResponse.ok) {
+                const errData = await uploadResponse.json().catch(() => ({}));
+                throw new Error(`فشل الرفع: ${errData.message || uploadResponse.status}`);
+            }
+            
+            addLog(`   ✓ تم الرفع بنجاح`, 'success');
+            
+            // ✅ الخطوة 7: تحديث رابط الصورة في المنتج
+            product.image = filePath;
+            
+            // حساب الحجم الموفّر
+            const saved = originalSize - compressedSize;
+            if (saved > 0) totalSizeSaved += saved;
+            convertedCount++;
+            
+            sizeEl.textContent = `${(totalSizeSaved / 1024 / 1024).toFixed(2)} MB توفير`;
+            
+            addLog(`   ✅ تم بنجاح! توفير: ${(saved / 1024).toFixed(1)} KB`, 'success');
+            detailedReport.push(`✅ ${product.name}: ${fileName} (${(compressedSize / 1024).toFixed(1)} KB)`);
+            
+            // تأخير لتجنب rate limit
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+        } catch (error) {
+            failedCount++;
+            addLog(`   ❌ خطأ: ${error.message}`, 'error');
+            detailedReport.push(`❌ ${product.name}: ${error.message}`);
+        }
+    }
+    
+    // ✅ الخطوة 8: حذف الصور القديمة من JSON إذا تم تفعيل الخيار
+    if (deleteOld) {
+        addLog(``, 'info');
+        addLog(`🗑️ جاري حذف الصور القديمة من JSON...`, 'gold');
+        statusEl.textContent = 'حذف الصور القديمة...';
+        
+        let deletedCount = 0;
+        storeData.products.forEach(p => {
+            if (p.image && p.image.startsWith('data:image')) {
+                p.image = ''; // فارغ بدلاً من placeholder
+                deletedCount++;
+            }
+        });
+        
+        addLog(`   ✓ تم حذف ${deletedCount} صورة Base64 من JSON`, 'success');
+    }
+    
+    // ✅ الخطوة 9: حفظ التغييرات
+    saveToLocalStorage();
+    
+    // ✅ الخطوة 10: عرض التقرير النهائي
+    const summary = `
+📊 ═══════════════════════════════
+   تقرير تحويل الصور
+═══════════════════════════════
+
+✅ تم تحويل: ${convertedCount}
+❌ فشل: ${failedCount}
+💾 الحجم الموفّر: ${(totalSizeSaved / 1024 / 1024).toFixed(2)} MB
+📁 المجلد: images/
+📝 التسمية: {اسم-المنتج}-{id}.webp
+═══════════════════════════════
+    `.trim();
+    
+    progressBox.innerHTML = `
+        <h3 style="color: var(--gold); margin-bottom: 16px; text-align: center;">
+            ${failedCount === 0 ? '✅' : '⚠️'} اكتملت العملية
+        </h3>
+        <pre style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; font-size: 0.9rem; white-space: pre-wrap; color: var(--text); margin-bottom: 16px;">${summary}</pre>
+        
+        <details style="margin-bottom: 16px;">
+            <summary style="cursor: pointer; color: var(--gold); font-weight: 600;">📋 التفاصيل الكاملة (${detailedReport.length})</summary>
+            <div style="max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 0.85rem;">
+                ${detailedReport.map(r => `<div style="margin-bottom: 4px;">${r}</div>`).join('')}
+            </div>
+        </details>
+        
+        <div style="display: flex; gap: 10px;">
+            <button onclick="this.parentElement.parentElement.remove()" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.1); color: var(--text); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; font-weight: 700; cursor: pointer;">إغلاق</button>
+            ${convertedCount > 0 ? 
+                `<button onclick="publishDirectly(); this.parentElement.parentElement.remove()" style="flex: 1; padding: 12px; background: var(--success); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">🚀 نشر الآن</button>` 
+                : ''}
+        </div>
+    `;
+    
+    console.log(summary);
+    console.log('📋 التفاصيل:', detailedReport);
+    
+    showToast(`✅ تم تحويل ${convertedCount} صورة | توفير ${(totalSizeSaved / 1024 / 1024).toFixed(2)} MB`);
 }
 
 async function base64ToBlob(base64String) {
