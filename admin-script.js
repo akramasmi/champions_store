@@ -698,13 +698,59 @@ async function publishDirectly() {
 }
 
 // ✅ إصلاح شامل وآمن للروابط (بدون إعادة تسمية على GitHub)
+// ✅ أداة معالجة أسماء الصور القديمة - نسخة محسّنة
 async function fixAllImageUrls() {
-    if (!storeData || !storeData.products) return showToast('لا توجد منتجات', 'error');
+    if (!storeData || !storeData.products) {
+        showToast('لا توجد منتجات', 'error');
+        return;
+    }
     
     const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
-    if (!config || !config.token) return showToast('أعد إعداد GitHub أولاً', 'error');
+    if (!config || !config.token) {
+        showToast('أعد إعداد GitHub أولاً', 'error');
+        return;
+    }
     
-    showToast('🔍 جاري مطابقة الصور مع الملفات الموجودة...');
+    if (!confirm('⚠️ سيتم:\n1. فحص جميع الصور على GitHub\n2. إعادة تسمية الصور القديمة لتطابق النظام الجديد\n3. تحديث الروابط في products.json\n\nهل أنت متأكد؟')) {
+        return;
+    }
+    
+    // ✅ إنشاء نافذة التقدم
+    const progressBox = document.createElement('div');
+    progressBox.style.cssText = `
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: rgba(18, 18, 26, 0.98); backdrop-filter: blur(20px);
+        padding: 30px; border-radius: 16px; border: 2px solid var(--gold);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5); z-index: 9999;
+        min-width: 450px; max-width: 90vw; max-height: 80vh; overflow-y: auto;
+        color: var(--text);
+    `;
+    progressBox.innerHTML = `
+        <h3 style="color: var(--gold); margin-bottom: 16px; text-align: center;">🔍 جاري معالجة الصور</h3>
+        <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 10px; overflow: hidden; margin-bottom: 12px;">
+            <div id="fixProgress" style="height: 100%; background: var(--gradient-gold); width: 0%; transition: width 0.3s;"></div>
+        </div>
+        <p id="fixStatus" style="text-align: center; margin-bottom: 16px;">جاري جلب قائمة الملفات من GitHub...</p>
+        <div id="fixLog" style="font-size: 0.85rem; max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; font-family: monospace;"></div>
+    `;
+    document.body.appendChild(progressBox);
+    
+    const progress = document.getElementById('fixProgress');
+    const status = document.getElementById('fixStatus');
+    const log = document.getElementById('fixLog');
+    
+    function addLog(msg, type = 'info') {
+        const colors = {
+            info: 'var(--text-secondary)',
+            success: 'var(--success)',
+            error: 'var(--danger)',
+            warning: 'var(--warning)',
+            gold: 'var(--gold)'
+        };
+        const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+        log.innerHTML += `<div style="color: ${colors[type]}; margin-bottom: 4px;">[${time}] ${msg}</div>`;
+        log.scrollTop = log.scrollHeight;
+    }
     
     const baseUrl = `https://api.github.com/repos/${config.username}/${config.repo}`;
     const headers = {
@@ -712,71 +758,326 @@ async function fixAllImageUrls() {
         'Accept': 'application/vnd.github.v3+json'
     };
     
-    // ✅ جلب الملفات من مجلد images/ فقط
-    let githubFiles = [];
     try {
-        const res = await fetch(`${baseUrl}/contents/images`, { headers });
-        if (res.ok) {
-            const data = await res.json();
-            githubFiles = data.filter(f => f.type === 'file').map(f => f.name);
-        }
-    } catch (e) {
-        console.error('خطأ في جلب الملفات:', e);
-    }
-    
-    console.log(`📁 تم العثور على ${githubFiles.length} ملف في images/`);
-    
-    let fixedCount = 0;
-    let notFoundCount = 0;
-    const report = [];
-    
-    for (const product of storeData.products) {
-        if (!product.image || product.image.startsWith('data:')) continue;
+        // ✅ المرحلة 1: جلب جميع الملفات من GitHub
+        addLog('📡 جاري جلب قائمة الملفات من GitHub...', 'gold');
+        status.textContent = 'جاري جلب الملفات...';
         
-        const currentFileName = extractFileName(product.image);
+        const allFiles = new Map(); // filename → { folder, path, sha, name }
         
-        // 1. هل الملف الحالي موجود بالفعل في images/؟
-        if (githubFiles.includes(currentFileName)) {
-            if (product.image !== `images/${currentFileName}`) {
-                product.image = `images/${currentFileName}`;
-                fixedCount++;
-                report.push(`✅ ${product.name}: تم تصحيح المسار إلى images/${currentFileName}`);
+        // فحص 3 مواقع: images/, imgs/, والجذر
+        for (const folder of ['images', 'imgs', '']) {
+            try {
+                const url = folder ? `${baseUrl}/contents/${folder}` : `${baseUrl}/contents/`;
+                const res = await fetch(url, { headers });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    const imageFiles = data.filter(f => 
+                        f.type === 'file' && 
+                        /\.(webp|png|jpg|jpeg)$/i.test(f.name)
+                    );
+                    
+                    imageFiles.forEach(f => {
+                        const actualFolder = folder || '';
+                        allFiles.set(f.name, {
+                            folder: actualFolder,
+                            path: actualFolder ? `${actualFolder}/${f.name}` : f.name,
+                            sha: f.sha,
+                            name: f.name,
+                            size: f.size
+                        });
+                    });
+                    
+                    addLog(`✅ ${actualFolder || 'الجذر'}: ${imageFiles.length} صورة`, 'success');
+                } else if (res.status === 404) {
+                    addLog(`⚠️ مجلد ${folder || 'الجذر'} غير موجود`, 'warning');
+                }
+            } catch (e) {
+                addLog(`❌ خطأ في ${folder || 'الجذر'}: ${e.message}`, 'error');
             }
-            continue;
         }
         
-        // 2. إذا لم يكن موجوداً، حاول العثور على ملف يحتوي على ID المنتج
-        const idStr = String(product.id);
-        const matchedFile = githubFiles.find(f => 
-            f.includes(`-${idStr}.`) || 
-            f.includes(`product-${idStr}-`) ||
-            f === `${idStr}.webp`
-        );
+        addLog(`📊 إجمالي الملفات: ${allFiles.size}`, 'gold');
         
-        if (matchedFile) {
-            product.image = `images/${matchedFile}`;
-            fixedCount++;
-            report.push(`🔄 ${product.name}: تم المطابقة مع ${matchedFile}`);
-        } else {
-            notFoundCount++;
-            report.push(`❌ ${product.name}: لم يُعثر على صورة (ID: ${idStr})`);
+        if (allFiles.size === 0) {
+            addLog('❌ لا توجد أي صور على GitHub!', 'error');
+            status.textContent = '❌ فشل: لا توجد صور';
+            return;
         }
-    }
-    
-    saveToLocalStorage();
-    renderProducts();
-    
-    const reportText = `📊 تقرير المطابقة:\n\n` +
-        `✅ تم تصحيح/مطابقة: ${fixedCount}\n` +
-        `❌ لم يُعثر على صورة: ${notFoundCount}\n` +
-        `📁 ملفات في images/: ${githubFiles.length}\n\n` +
-        `📝 التفاصيل:\n${report.slice(0, 30).join('\n')}${report.length > 30 ? '\n...' : ''}`;
-    
-    console.log(reportText);
-    alert(reportText + '\n\n💡 راجع Console (F12) للتقرير الكامل\n\n⚠️ اضغط "نشر فوري" لحفظ التغييرات');
-    showToast(`✅ تم: ${fixedCount} مطابقة`);
-}
+        
+        // ✅ المرحلة 2: معالجة كل منتج
+        status.textContent = 'جاري معالجة الصور...';
+        const results = {
+            renamed: 0,      // تم إعادة تسميته
+            fixed: 0,        // تم تصحيح المسار فقط
+            alreadyOk: 0,    // صحيح مسبقاً
+            missing: 0,      // الصورة مفقودة
+            failed: 0,       // فشل العملية
+            base64: 0        // صورة Base64 (تُترك كما هي)
+        };
+        
+        const detailedReport = [];
+        const total = storeData.products.length;
+        
+        for (let i = 0; i < total; i++) {
+            const product = storeData.products[i];
+            const percent = ((i + 1) / total * 100).toFixed(0);
+            progress.style.width = `${percent}%`;
+            status.textContent = `معالجة ${i + 1} من ${total}: ${product.name}`;
+            
+            // تخطي Base64
+            if (!product.image || product.image.startsWith('data:')) {
+                results.base64++;
+                addLog(`⏭️ ${product.name}: صورة Base64 (تُترك)`, 'info');
+                continue;
+            }
+            
+            // استخراج اسم الملف الحالي
+            const currentFileName = product.image.split('/').pop().split('?')[0];
+            const currentFolder = product.image.includes('/') 
+                ? product.image.split('/')[0] 
+                : '';
+            
+            // حساب الاسم المتوقع الجديد
+            const expectedFileName = generateImageFileName(product);
+            const expectedPath = `images/${expectedFileName}`;
+            
+            addLog(`🔎 ${product.name}:`, 'gold');
+            addLog(`   الحالي: ${product.image}`, 'info');
+            addLog(`   المتوقع: ${expectedPath}`, 'info');
+            
+            // ✅ الحالة 1: الاسم مطابق تماماً للتسمية الجديدة
+            if (currentFileName === expectedFileName) {
+                // تحقق من وجود الملف
+                if (allFiles.has(expectedFileName)) {
+                    const file = allFiles.get(expectedFileName);
+                    const correctPath = `${file.folder}/${expectedFileName}`;
+                    
+                    if (product.image !== correctPath) {
+                        product.image = correctPath;
+                        results.fixed++;
+                        addLog(`   ✅ تم تصحيح المجلد: ${correctPath}`, 'success');
+                        detailedReport.push(`✅ ${product.name}: تصحيح مسار → ${correctPath}`);
+                    } else {
+                        results.alreadyOk++;
+                        addLog(`   ✓ صحيح مسبقاً`, 'success');
+                        detailedReport.push(`✓ ${product.name}: صحيح`);
+                    }
+                } else {
+                    results.missing++;
+                    addLog(`   ❌ الملف ${expectedFileName} غير موجود على GitHub`, 'error');
+                    detailedReport.push(`❌ ${product.name}: الملف مفقود`);
+                }
+                continue;
+            }
+            
+            // ✅ الحالة 2: الاسم قديم - ابحث عن الملف الفعلي
+            let foundFile = null;
+            
+            // محاولة 1: البحث بالاسم الحالي
+            if (allFiles.has(currentFileName)) {
+                foundFile = allFiles.get(currentFileName);
+                addLog(`   🔍 وُجد بالاسم الحالي: ${currentFileName}`, 'info');
+            }
+            
+            // محاولة 2: البحث بالـ ID فقط
+            if (!foundFile) {
+                const idPatterns = [
+                    `${product.id}.webp`,
+                    `${product.id}.png`,
+                    `${product.id}.jpg`,
+                    `product-${product.id}.webp`,
+                    `product-${product.id}.png`
+                ];
+                
+                for (const pattern of idPatterns) {
+                    if (allFiles.has(pattern)) {
+                        foundFile = allFiles.get(pattern);
+                        addLog(`   🔍 وُجد بالنمط: ${pattern}`, 'info');
+                        break;
+                    }
+                }
+            }
+            
+            // محاولة 3: البحث عن ملف يبدأ بـ ID (للـ timestamps)
+            if (!foundFile) {
+                for (const [filename, file] of allFiles.entries()) {
+                    const baseName = filename.replace(/\.(webp|png|jpg|jpeg)$/i, '');
+                    if (baseName === `${product.id}` ||
+                        baseName === `product-${product.id}` ||
+                        baseName.startsWith(`${product.id}-`) ||
+                        baseName.startsWith(`product-${product.id}-`)) {
+                        foundFile = file;
+                        addLog(`   🔍 وُجد بالمطابقة الجزئية: ${filename}`, 'info');
+                        break;
+                    }
+                }
+            }
+            
+            // لم يُعثر على الملف
+            if (!foundFile) {
+                results.missing++;
+                addLog(`   ❌ لم يُعثر على أي ملف للمنتج`, 'error');
+                detailedReport.push(`❌ ${product.name}: الصورة مفقودة`);
+                continue;
+            }
+            
+            // ✅ الحالة 3: الملف موجود - أعد تسميته
+            addLog(`   🔄 جاري إعادة التسمية: ${foundFile.name} → ${expectedFileName}`, 'gold');
+            
+            try {
+                // تأخير لتجنب rate limit
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // التحقق من عدم وجود ملف بنفس الاسم الجديد
+                if (allFiles.has(expectedFileName)) {
+                    addLog(`   ⚠️ تحذير: يوجد ملف بنفس الاسم الجديد!`, 'warning');
+                    // احذف الملف الجديد القديم أولاً
+                    try {
+                        const existingNew = allFiles.get(expectedFileName);
+                        const delRes = await fetch(`${baseUrl}/contents/${existingNew.path}`, {
+                            method: 'DELETE',
+                            headers,
+                            body: JSON.stringify({
+                                message: `🗑️ حذف ملف قديم قبل إعادة التسمية`,
+                                sha: existingNew.sha,
+                                branch: 'main'
+                            })
+                        });
+                        if (delRes.ok) {
+                            addLog(`   ✓ تم حذف الملف القديم بنفس الاسم`, 'success');
+                        }
+                    } catch (e) {
+                        addLog(`   ⚠️ فشل حذف الملف القديم: ${e.message}`, 'warning');
+                    }
+                }
+                
+                // جلب محتوى الملف القديم
+                const fileRes = await fetch(`${baseUrl}/contents/${foundFile.path}`, { headers });
+                if (!fileRes.ok) {
+                    throw new Error(`فشل جلب المحتوى: ${fileRes.status}`);
+                }
+                const fileData = await fileRes.json();
+                
+                // رفع الملف بالاسم الجديد
+                const newPath = `${foundFile.folder}/${expectedFileName}`;
+                const uploadRes = await fetch(`${baseUrl}/contents/${newPath}`, {
+                    method: 'PUT',
+                    headers,
+                    body: JSON.stringify({
+                        message: `🔄 إعادة تسمية: ${foundFile.name} → ${expectedFileName}`,
+                        content: fileData.content,
+                        branch: 'main'
+                    })
+                });
+                
+                if (!uploadRes.ok) {
+                    const errData = await uploadRes.json();
+                    throw new Error(`فشل الرفع: ${errData.message || uploadRes.status}`);
+                }
+                
+                const newFileData = await uploadRes.json();
+                addLog(`   ✓ تم رفع الملف الجديد`, 'success');
+                
+                // التأكد من نجاح الرفع قبل حذف القديم
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // حذف الملف القديم
+                const deleteRes = await fetch(`${baseUrl}/contents/${foundFile.path}`, {
+                    method: 'DELETE',
+                    headers,
+                    body: JSON.stringify({
+                        message: `🗑️ حذف بعد إعادة التسمية: ${foundFile.name}`,
+                        sha: fileData.sha,
+                        branch: 'main'
+                    })
+                });
+                
+                if (!deleteRes.ok) {
+                    addLog(`   ⚠️ تحذير: تم رفع الجديد لكن فشل حذف القديم`, 'warning');
+                } else {
+                    addLog(`   ✓ تم حذف الملف القديم`, 'success');
+                }
+                
+                // تحديث الرابط في المنتج
+                product.image = newPath;
+                
+                // تحديث الخريطة المحلية
+                allFiles.delete(foundFile.name);
+                allFiles.set(expectedFileName, {
+                    folder: foundFile.folder,
+                    path: newPath,
+                    sha: newFileData.content.sha,
+                    name: expectedFileName
+                });
+                
+                results.renamed++;
+                detailedReport.push(`🔄 ${product.name}: ${foundFile.name} → ${expectedFileName}`);
+                
+            } catch (error) {
+                results.failed++;
+                addLog(`   ❌ فشل: ${error.message}`, 'error');
+                detailedReport.push(`❌ ${product.name}: ${error.message}`);
+            }
+        }
+        
+        // ✅ المرحلة 3: حفظ التغييرات
+        status.textContent = 'جاري حفظ التغييرات...';
+        addLog('', 'info');
+        addLog('💾 جاري حفظ التغييرات...', 'gold');
+        saveToLocalStorage();
+        
+        // ✅ المرحلة 4: عرض التقرير النهائي
+        const summary = `
+📊 ═══════════════════════════════
+   تقرير معالجة الصور
+═══════════════════════════════ 📊
 
+✅ تم إعادة تسمية: ${results.renamed}
+🔧 تم تصحيح المسار: ${results.fixed}
+✓ صحيح مسبقاً: ${results.alreadyOk}
+⏭️ صور Base64: ${results.base64}
+❌ صور مفقودة: ${results.missing}
+⚠️ عمليات فاشلة: ${results.failed}
+
+📁 إجمالي الملفات على GitHub: ${allFiles.size}
+📦 إجمالي المنتجات: ${total}
+═══════════════════════════════
+        `.trim();
+        
+        progressBox.innerHTML = `
+            <h3 style="color: var(--gold); margin-bottom: 16px; text-align: center;">✅ اكتملت المعالجة</h3>
+            <pre style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; font-size: 0.9rem; white-space: pre-wrap; color: var(--text); margin-bottom: 16px;">${summary}</pre>
+            <details style="margin-bottom: 16px;">
+                <summary style="cursor: pointer; color: var(--gold); font-weight: 600;">📋 عرض التفاصيل الكاملة (${detailedReport.length})</summary>
+                <div style="max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 0.85rem;">
+                    ${detailedReport.map(r => `<div style="margin-bottom: 4px;">${r}</div>`).join('')}
+                </div>
+            </details>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="this.parentElement.parentElement.remove()" style="flex: 1; padding: 12px; background: var(--gradient-gold); color: var(--primary); border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">حسناً</button>
+                ${results.renamed > 0 || results.fixed > 0 ? 
+                    `<button onclick="publishDirectly(); this.parentElement.parentElement.remove()" style="flex: 1; padding: 12px; background: var(--success); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">🚀 نشر الآن</button>` 
+                    : ''}
+                ${results.missing > 0 ? 
+                    `<button onclick="alert('المنتجات المفقودة:\\n${detailedReport.filter(r => r.startsWith('❌')).join('\\n')}')" style="flex: 1; padding: 12px; background: var(--warning); color: var(--primary); border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">⚠️ عرض المفقود</button>` 
+                    : ''}
+            </div>
+        `;
+        
+        console.log(summary);
+        console.log('📋 التقرير التفصيلي:', detailedReport);
+        
+        showToast(`✅ تم: ${results.renamed} إعادة تسمية، ${results.fixed} تصحيح`);
+        
+    } catch (error) {
+        console.error('❌ خطأ:', error);
+        addLog(`❌ خطأ عام: ${error.message}`, 'error');
+        status.textContent = '❌ حدث خطأ';
+        showToast('❌ خطأ: ' + error.message, 'error');
+    }
+}
 async function testAllImageUrls() {
     if (!storeData || !storeData.products) return showToast('لا توجد منتجات', 'error');
     showToast('🔍 جاري الفحص...');
