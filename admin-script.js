@@ -128,7 +128,6 @@ function filterAdminProducts() {
 
 function renderProducts() { renderProductsList(storeData.products); }
 
-// ✅ عرض المنتجات مع حالة Sold Out
 function renderProductsList(products) {
     const container = document.getElementById('productsTable');
     if (!container || !storeData) return;
@@ -173,7 +172,7 @@ function openProductModal() {
     document.getElementById('productBadge').value = '';
     document.getElementById('productImageUpload').value = '';
     document.getElementById('imagePreview').style.display = 'none';
-    document.getElementById('productSoldOut').checked = false; // ✅ إعادة تعيين Sold Out
+    document.getElementById('productSoldOut').checked = false;
     renderCategorySelect();
     document.getElementById('productModal').classList.add('active');
 }
@@ -186,7 +185,6 @@ function renderCategorySelect() {
     select.innerHTML = categories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
 }
 
-// ✅ تعديل المنتج مع دعم Sold Out
 function editProduct(id) {
     const p = storeData.products.find(x => x.id === id);
     if (!p) { showToast('المنتج غير موجود', 'error'); return; }
@@ -202,7 +200,7 @@ function editProduct(id) {
     document.getElementById('productBrand').value = p.brand || '';
     document.getElementById('productWeight').value = p.weight || '';
     document.getElementById('productServings').value = p.servings || '';
-    document.getElementById('productSoldOut').checked = p.soldOut === true; // ✅ تعيين Sold Out
+    document.getElementById('productSoldOut').checked = p.soldOut === true;
     
     renderCategorySelect();
     document.getElementById('productCategory').value = p.category;
@@ -239,7 +237,6 @@ function handleImageUpload(event) {
     reader.readAsDataURL(file);
 }
 
-// ✅ حفظ المنتج مع دعم Sold Out
 function saveProduct() {
     const name = document.getElementById('productName').value.trim();
     const category = document.getElementById('productCategory').value;
@@ -252,7 +249,7 @@ function saveProduct() {
     const brand = document.getElementById('productBrand').value.trim();
     const weight = document.getElementById('productWeight').value.trim();
     const servings = parseInt(document.getElementById('productServings').value) || null;
-    const soldOut = document.getElementById('productSoldOut').checked; // ✅ قراءة Sold Out
+    const soldOut = document.getElementById('productSoldOut').checked;
     
     if (!name || !category || isNaN(price)) { showToast('يرجى ملء الحقول المطلوبة (*)', 'error'); return; }
     
@@ -277,7 +274,6 @@ function saveProduct() {
     showToast(editingProductId ? 'تم التحديث ✓' : 'تمت الإضافة ✓');
 }
 
-// Categories
 function renderCategoriesAdmin() {
     const list = document.getElementById('categoriesList');
     if (!list || !storeData || !storeData.categories) return;
@@ -607,6 +603,38 @@ async function fixAllImageUrls() {
     }
     saveToLocalStorage(); filterAdminProducts();
     showToast(`✅ تم: ${fixedCount} تصحيح، ${renamedCount} إعادة تسمية`);
+}
+
+// ✅ الدالة المفقودة - فتح مودال تحويل الصور
+function showConvertModal() {
+    const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
+    if (!config || !config.token) {
+        showToast('أعد إعداد GitHub أولاً', 'error');
+        return;
+    }
+    
+    if (!storeData || !storeData.products) {
+        showToast('لا توجد منتجات', 'error');
+        return;
+    }
+    
+    const categorySelect = document.getElementById('convertCategory');
+    categorySelect.innerHTML = '<option value="all">جميع الفئات</option>';
+    storeData.categories.forEach(cat => {
+        if (cat.id !== 'all') {
+            categorySelect.innerHTML += `<option value="${cat.id}">${cat.icon} ${cat.name}</option>`;
+        }
+    });
+    
+    const base64Count = storeData.products.filter(p => p.image && p.image.startsWith('data:image')).length;
+    document.getElementById('base64Count').textContent = `صور Base64: ${base64Count}`;
+    document.getElementById('externalCount').textContent = `صور خارجية: ${storeData.products.length - base64Count}`;
+    
+    document.getElementById('convertModal').classList.add('active');
+}
+
+function closeConvertModal() {
+    document.getElementById('convertModal').classList.remove('active');
 }
 
 async function convertAllImagesToWebP() {
