@@ -6,6 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta name="robots" content="noindex, nofollow">
     <title>لوحة الإدارة</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
     <link rel="stylesheet" href="admin-style.css">
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 </head>
@@ -43,7 +44,6 @@
         </nav>
 
         <main class="admin-content">
-            <!-- المنتجات -->
             <section class="tab-content active" id="productsTab">
                 <div class="section-header">
                     <h2>📦 المنتجات</h2>
@@ -52,8 +52,6 @@
                         <button class="btn-reorganize" onclick="reorganizeIds()">🔢 ترتيب IDs</button>
                     </div>
                 </div>
-                
-                <!-- ✅ شريط البحث والفرز -->
                 <div class="admin-filters-bar">
                     <input type="text" id="adminProductSearch" placeholder="🔍 ابحث..." oninput="filterAdminProducts()">
                     <select id="adminCategoryFilter" onchange="filterAdminProducts()">
@@ -69,34 +67,22 @@
                         <option value="category">🏷️ الفئة</option>
                     </select>
                 </div>
-                
                 <div class="products-table" id="productsTable"></div>
             </section>
 
-            <!-- الفئات -->
             <section class="tab-content" id="categoriesTab">
                 <h2>🏷️ الفئات</h2>
                 <div class="admin-form-card">
                     <div class="form-row">
-                        <div class="form-group">
-                            <label>اسم الفئة</label>
-                            <input type="text" id="newCatName" placeholder="مثال: بروتين">
-                        </div>
-                        <div class="form-group">
-                            <label>الأيقونة</label>
-                            <input type="text" id="newCatIcon" placeholder="🥛">
-                        </div>
+                        <div class="form-group"><label>اسم الفئة</label><input type="text" id="newCatName" placeholder="مثال: بروتين"></div>
+                        <div class="form-group"><label>الأيقونة</label><input type="text" id="newCatIcon" placeholder="🥛"></div>
                     </div>
-                    <div class="form-group">
-                        <label>وصف الفئة (يظهر في الـ home)</label>
-                        <textarea id="newCatDescription" rows="2" placeholder="وصف مختصر عن الفئة..."></textarea>
-                    </div>
+                    <div class="form-group"><label>وصف الفئة (يظهر في الـ home)</label><textarea id="newCatDescription" rows="2" placeholder="وصف مختصر..."></textarea></div>
                     <button class="btn-save" onclick="addCategory()">➕ إضافة فئة</button>
                     <div id="categoriesList" style="margin-top: 20px;"></div>
                 </div>
             </section>
 
-            <!-- معلومات المتجر -->
             <section class="tab-content" id="storeTab">
                 <h2>🏪 معلومات المتجر</h2>
                 <div class="admin-form-card">
@@ -110,42 +96,20 @@
                 </div>
             </section>
 
-            <!-- ✅ تبويب الفوتر الجديد -->
             <section class="tab-content" id="footerTab">
                 <h2>🦶 إعدادات الفوتر</h2>
                 <div class="admin-form-card">
-                    <div class="info-box">
-                        <strong>💡 ملاحظة:</strong> هذه الإعدادات تظهر في أسفل الصفحة الرئيسية (الفوتر) وقسم "تواصل معنا".
-                    </div>
-                    <div class="form-group">
-                        <label>وصف الفوتر</label>
-                        <input type="text" id="footerDescription" placeholder="مكملات غذائية فاخرة">
-                    </div>
-                    <div class="form-group">
-                        <label>حقوق النشر</label>
-                        <input type="text" id="footerCopyright" placeholder="© 2026 Champions Store">
-                    </div>
-                    <div class="form-group">
-                        <label>📱 رقم واتساب (للقسم التواصل)</label>
-                        <input type="text" id="footerWhatsapp" placeholder="963900000000">
-                    </div>
-                    <div class="form-group">
-                        <label>📸 حساب إنستغرام (بدون @)</label>
-                        <input type="text" id="footerInstagram" placeholder="champions_store">
-                    </div>
-                    <div class="form-group">
-                        <label>📍 الموقع / العنوان</label>
-                        <input type="text" id="footerLocation" placeholder="دمشق - سوريا">
-                    </div>
-                    <div class="form-group">
-                        <label>📧 البريد الإلكتروني (اختياري)</label>
-                        <input type="email" id="footerEmail" placeholder="info@example.com">
-                    </div>
+                    <div class="info-box"><strong>💡 ملاحظة:</strong> هذه الإعدادات تظهر في أسفل الصفحة الرئيسية.</div>
+                    <div class="form-group"><label>وصف الفوتر</label><input type="text" id="footerDescription" placeholder="مكملات غذائية فاخرة"></div>
+                    <div class="form-group"><label>حقوق النشر</label><input type="text" id="footerCopyright" placeholder="© 2026 Champions Store"></div>
+                    <div class="form-group"><label>📱 رقم واتساب</label><input type="text" id="footerWhatsapp" placeholder="963900000000"></div>
+                    <div class="form-group"><label>📸 حساب إنستغرام</label><input type="text" id="footerInstagram" placeholder="champions_store"></div>
+                    <div class="form-group"><label>📍 الموقع / العنوان</label><input type="text" id="footerLocation" placeholder="دمشق - سوريا"></div>
+                    <div class="form-group"><label>📧 البريد الإلكتروني</label><input type="email" id="footerEmail" placeholder="info@example.com"></div>
                     <button class="btn-save" onclick="saveFooterInfo()">💾 حفظ إعدادات الفوتر</button>
                 </div>
             </section>
 
-            <!-- من نحن -->
             <section class="tab-content" id="aboutTab">
                 <h2>📝 من نحن</h2>
                 <div class="admin-form-card">
@@ -156,74 +120,30 @@
                 </div>
             </section>
 
-            <!-- اللوغو -->
             <section class="tab-content" id="logoTab">
                 <h2>🖼️ اللوغو</h2>
                 <div class="admin-form-card">
-                    <div class="logo-preview">
-                        <img id="logoPreview" src="logo.png" alt="اللوغو">
-                    </div>
-                    <div class="form-group">
-                        <label>رفع لوغو جديد</label>
-                        <input type="file" id="logoUpload" accept="image/*" onchange="handleLogoUpload(event)">
-                    </div>
-                    <div class="form-group">
-                        <label>أو رابط خارجي</label>
-                        <input type="text" id="logoUrl" placeholder="https://...">
-                    </div>
+                    <div class="logo-preview"><img id="logoPreview" src="logo.png" alt="اللوغو" onerror="this.style.display='none'"></div>
+                    <div class="form-group"><label>رفع لوغو جديد</label><input type="file" id="logoUpload" accept="image/*" onchange="handleLogoUpload(event)"></div>
+                    <div class="form-group"><label>أو رابط خارجي</label><input type="text" id="logoUrl" placeholder="https://..."></div>
                     <button class="btn-save" onclick="saveLogo()">💾 حفظ</button>
                 </div>
             </section>
 
-            <!-- الأدوات -->
             <section class="tab-content" id="toolsTab">
                 <h2>🛠️ أدوات</h2>
                 <div class="tools-grid">
-                    <div class="tool-card">
-                        <div class="tool-icon">🔍</div>
-                        <h3>فحص الصور</h3>
-                        <button class="btn-save" onclick="testAllImageUrls()">فحص</button>
-                    </div>
-                    <div class="tool-card">
-                        <div class="tool-icon">📥</div>
-                        <h3>تصدير</h3>
-                        <button class="btn-save" onclick="exportData()">تصدير JSON</button>
-                    </div>
-                    <div class="tool-card">
-                        <div class="tool-icon">📤</div>
-                        <h3>استيراد</h3>
-                        <button class="btn-save" onclick="document.getElementById('importFile').click()">استيراد</button>
-                        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
-                    </div>
-                    <div class="tool-card">
-                        <div class="tool-icon">🔄</div>
-                        <h3>إعادة تحميل</h3>
-                        <button class="btn-save" onclick="reloadFromServer()">إعادة</button>
-                    </div>
-                    <div class="tool-card">
-                        <div class="tool-icon">🔢</div>
-                        <h3>ترتيب IDs</h3>
-                        <button class="btn-save" onclick="reorganizeIds()">ترتيب</button>
-                    </div>
-                    <div class="tool-card">
-                        <div class="tool-icon">🖼️</div>
-                        <h3>تحويل الصور</h3>
-                        <button class="btn-save" onclick="showConvertModal()">تحويل</button>
-                    </div>
-                    <div class="tool-card">
-                        <div class="tool-icon">🔗</div>
-                        <h3>تصحيح الروابط</h3>
-                        <button class="btn-save" onclick="fixAllImageUrls()">تصحيح</button>
-                    </div>
-                    <div class="tool-card">
-                        <div class="tool-icon">🚀</div>
-                        <h3>نشر فوري</h3>
-                        <button class="btn-save" onclick="publishDirectly()">نشر</button>
-                    </div>
+                    <div class="tool-card"><div class="tool-icon">🔍</div><h3>فحص الصور</h3><button class="btn-save" onclick="testAllImageUrls()">فحص</button></div>
+                    <div class="tool-card"><div class="tool-icon">📥</div><h3>تصدير</h3><button class="btn-save" onclick="exportData()">تصدير JSON</button></div>
+                    <div class="tool-card"><div class="tool-icon">📤</div><h3>استيراد</h3><button class="btn-save" onclick="document.getElementById('importFile').click()">استيراد</button><input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)"></div>
+                    <div class="tool-card"><div class="tool-icon">🔄</div><h3>إعادة تحميل</h3><button class="btn-save" onclick="reloadFromServer()">إعادة</button></div>
+                    <div class="tool-card"><div class="tool-icon">🔢</div><h3>ترتيب IDs</h3><button class="btn-save" onclick="reorganizeIds()">ترتيب</button></div>
+                    <div class="tool-card"><div class="tool-icon">🖼️</div><h3>تحويل الصور</h3><button class="btn-save" onclick="showConvertModal()">تحويل</button></div>
+                    <div class="tool-card"><div class="tool-icon">🔗</div><h3>تصحيح الروابط</h3><button class="btn-save" onclick="fixAllImageUrls()">تصحيح</button></div>
+                    <div class="tool-card"><div class="tool-icon">🚀</div><h3>نشر فوري</h3><button class="btn-save" onclick="publishDirectly()">نشر</button></div>
                 </div>
             </section>
 
-            <!-- كلمة المرور -->
             <section class="tab-content" id="passwordTab">
                 <h2>🔑 كلمة المرور</h2>
                 <div class="admin-form-card">
@@ -234,13 +154,10 @@
                 </div>
             </section>
 
-            <!-- GitHub -->
             <section class="tab-content" id="githubTab">
                 <h2>🐙 GitHub</h2>
                 <div class="admin-form-card">
-                    <div class="info-box">
-                        <a href="https://github.com/settings/tokens/new?scopes=repo" target="_blank">🔑 إنشاء Token</a>
-                    </div>
+                    <div class="info-box"><a href="https://github.com/settings/tokens/new?scopes=repo" target="_blank">🔑 إنشاء Token</a></div>
                     <div class="form-group"><label>Username</label><input type="text" id="githubUsername"></div>
                     <div class="form-group"><label>Repository</label><input type="text" id="githubRepo"></div>
                     <div class="form-group"><label>Token</label><input type="password" id="githubToken"></div>
@@ -250,7 +167,6 @@
         </main>
     </div>
 
-    <!-- مودال المنتج -->
     <div class="modal" id="productModal">
         <div class="modal-content modal-large">
             <div class="modal-header">
@@ -259,81 +175,41 @@
             </div>
             <div class="modal-body">
                 <input type="hidden" id="productId">
-                
                 <div class="form-section">
                     <h4>📝 المعلومات الأساسية</h4>
-                    <div class="form-group">
-                        <label>اسم المنتج *</label>
-                        <input type="text" id="productName" placeholder="مثال: Whey Protein Gold Standard">
-                    </div>
+                    <div class="form-group"><label>اسم المنتج *</label><input type="text" id="productName" placeholder="مثال: Whey Protein"></div>
                     <div class="form-row">
-                        <div class="form-group">
-                            <label>الفئة *</label>
-                            <select id="productCategory"></select>
-                        </div>
-                        <div class="form-group">
-                            <label>الشارة</label>
+                        <div class="form-group"><label>الفئة *</label><select id="productCategory"></select></div>
+                        <div class="form-group"><label>الشارة</label>
                             <select id="productBadge">
-                                <option value="">بدون</option>
-                                <option value="جديد">جديد</option>
-                                <option value="خصم">خصم</option>
-                                <option value="الأكثر مبيعاً">الأكثر مبيعاً</option>
-                                <option value="مميز">مميز</option>
+                                <option value="">بدون</option><option value="جديد">جديد</option><option value="خصم">خصم</option><option value="الأكثر مبيعاً">الأكثر مبيعاً</option><option value="مميز">مميز</option>
                             </select>
                         </div>
                     </div>
                 </div>
-                
                 <div class="form-section">
                     <h4>💰 الأسعار</h4>
                     <div class="form-row">
-                        <div class="form-group">
-                            <label>السعر ($) *</label>
-                            <input type="number" id="productPrice" step="0.01" placeholder="45.00">
-                        </div>
-                        <div class="form-group">
-                            <label>السعر القديم ($)</label>
-                            <input type="number" id="productOldPrice" step="0.01" placeholder="اختياري">
-                        </div>
+                        <div class="form-group"><label>السعر ($) *</label><input type="number" id="productPrice" step="0.01" placeholder="45.00"></div>
+                        <div class="form-group"><label>السعر القديم ($)</label><input type="number" id="productOldPrice" step="0.01" placeholder="اختياري"></div>
                     </div>
                 </div>
-                
                 <div class="form-section">
                     <h4>📊 خصائص المنتج</h4>
                     <div class="form-row">
-                        <div class="form-group">
-                            <label>🏢 اسم الشركة</label>
-                            <input type="text" id="productBrand" placeholder="مثال: Optimum Nutrition">
-                        </div>
-                        <div class="form-group">
-                            <label>⚖️ وزن المنتج</label>
-                            <input type="text" id="productWeight" placeholder="مثال: 2kg / 5lb">
-                        </div>
+                        <div class="form-group"><label>🏢 اسم الشركة</label><input type="text" id="productBrand" placeholder="مثال: Optimum Nutrition"></div>
+                        <div class="form-group"><label>⚖️ وزن المنتج</label><input type="text" id="productWeight" placeholder="مثال: 2kg"></div>
                     </div>
-                    <div class="form-group">
-                        <label>🥄 عدد الحصص (اختياري)</label>
-                        <input type="number" id="productServings" placeholder="مثال: 70" min="0">
-                    </div>
+                    <div class="form-group"><label>🥄 عدد الحصص (اختياري)</label><input type="number" id="productServings" placeholder="مثال: 70" min="0"></div>
                 </div>
-                
                 <div class="form-section">
                     <h4>📝 الوصف</h4>
-                    <div class="form-group">
-                        <label>وصف المنتج</label>
-                        <textarea id="productDescription" rows="3" placeholder="وصف مختصر..."></textarea>
-                    </div>
+                    <div class="form-group"><label>وصف المنتج</label><textarea id="productDescription" rows="3" placeholder="وصف مختصر..."></textarea></div>
                 </div>
-                
                 <div class="form-section">
                     <h4>🖼️ الصورة</h4>
-                    <div class="form-group">
-                        <label>رفع صورة</label>
-                        <input type="file" id="productImageUpload" accept="image/*" onchange="handleImageUpload(event)">
-                    </div>
-                    <div class="form-group">
-                        <label>أو رابط الصورة</label>
-                        <input type="text" id="productImageUrl" placeholder="images/filename.webp">
-                    </div>
+                    <div class="form-group"><label>رفع صورة</label><input type="file" id="productImageUpload" accept="image/*" onchange="handleImageUpload(event)"></div>
+                    <div class="form-group"><label>أو رابط الصورة</label><input type="text" id="productImageUrl" placeholder="images/filename.webp"></div>
                     <img id="imagePreview" class="image-preview" style="display:none;">
                 </div>
             </div>
@@ -344,7 +220,6 @@
         </div>
     </div>
 
-    <!-- مودال تحويل الصور -->
     <div class="modal" id="convertModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -352,19 +227,9 @@
                 <button class="close-btn" onclick="closeConvertModal()">✕</button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label>الفئة</label>
-                    <select id="convertCategory">
-                        <option value="all">جميع الفئات</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label><input type="checkbox" id="deleteOldImages" checked> حذف الصور القديمة</label>
-                </div>
-                <div class="form-group">
-                    <label>الحد الأقصى (KB)</label>
-                    <input type="number" id="maxImageSize" value="150" min="50" max="500">
-                </div>
+                <div class="form-group"><label>الفئة</label><select id="convertCategory"><option value="all">جميع الفئات</option></select></div>
+                <div class="form-group"><label><input type="checkbox" id="deleteOldImages" checked> حذف الصور القديمة من JSON</label></div>
+                <div class="form-group"><label>الحد الأقصى (KB)</label><input type="number" id="maxImageSize" value="150" min="50" max="500"></div>
                 <div id="convertStats" style="margin-top: 20px; padding: 15px; background: rgba(200, 162, 93, 0.1); border-radius: 8px;">
                     <p id="base64Count">صور Base64: 0</p>
                     <p id="externalCount">صور خارجية: 0</p>
