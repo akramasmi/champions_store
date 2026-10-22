@@ -6,7 +6,6 @@ const DEFAULT_PASSWORD = btoa('admin123');
 let storeData = null;
 let editingProductId = null;
 
-// ✅ صورة احتياطية مدمجة (لا تسبب خطأ 404)
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCBmaWxsPSIjMWMxYzFlIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIvPjx0ZXh0IGZpbGw9IiNjOGEyNWQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgeD0iNTAlIiB5PSI1MCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
 
 function sanitizeFileName(name) {
@@ -47,6 +46,7 @@ function handleImageError(img) {
     img.src = PLACEHOLDER_IMAGE;
 }
 
+// Login
 function checkPassword() {
     const input = document.getElementById('passwordInput').value;
     const saved = localStorage.getItem(PASSWORD_KEY) || DEFAULT_PASSWORD;
@@ -127,23 +127,40 @@ function filterAdminProducts() {
 }
 
 function renderProducts() { renderProductsList(storeData.products); }
+
+// ✅ عرض المنتجات مع حالة Sold Out
 function renderProductsList(products) {
     const container = document.getElementById('productsTable');
     if (!container || !storeData) return;
     const categories = storeData.categories.filter(c => c.id !== 'all');
-    let html = '<div class="product-row header"><div>صورة</div><div>الاسم</div><div>السعر</div><div>الفئة</div><div>إجراءات</div></div>';
+    
+    let html = '<div class="product-row header"><div>صورة</div><div>الاسم</div><div>السعر</div><div>الفئة</div><div>الحالة</div><div>إجراءات</div></div>';
+    
     products.forEach(p => {
         const cat = categories.find(c => c.id === p.category);
-        html += `<div class="product-row" data-product-id="${p.id}">
+        const isSoldOut = p.soldOut === true;
+        const statusBadge = isSoldOut 
+            ? '<span style="background:var(--danger);color:white;padding:4px 10px;border-radius:12px;font-size:0.75rem;font-weight:700;">⛔ نفذت</span>'
+            : '<span style="background:var(--success);color:white;padding:4px 10px;border-radius:12px;font-size:0.75rem;font-weight:700;">✅ متوفر</span>';
+        
+        html += `<div class="product-row" data-product-id="${p.id}" style="${isSoldOut ? 'opacity:0.7;' : ''}">
             <img src="${getImageUrl(p.image)}" alt="${p.name}" onerror="handleImageError(this)">
-            <div><strong>${p.name}</strong>${p.brand ? `<br><small style="color:var(--text-secondary);">🏢 ${p.brand}</small>` : ''}${p.badge ? `<br><small style="color:var(--gold-dark);">${p.badge}</small>` : ''}<br><small style="color:var(--text-tertiary);font-size:0.7rem;">📁 ${extractFileName(p.image) || 'لا توجد'}</small></div>
-            <div>${p.price} $</div><div>${cat ? cat.name : p.category}</div>
+            <div>
+                <strong>${p.name}</strong>
+                ${p.brand ? `<br><small style="color:var(--text-secondary);">🏢 ${p.brand}</small>` : ''}
+                ${p.badge ? `<br><small style="color:var(--gold-dark);">${p.badge}</small>` : ''}
+                <br><small style="color:var(--text-tertiary);font-size:0.7rem;">📁 ${extractFileName(p.image) || 'لا توجد'}</small>
+            </div>
+            <div>${p.price} $</div>
+            <div>${cat ? cat.name : p.category}</div>
+            <div>${statusBadge}</div>
             <div class="product-actions">
                 <button class="btn-edit" data-action="edit" data-id="${p.id}">✏️</button>
                 <button class="btn-delete" data-action="delete" data-id="${p.id}">🗑️</button>
             </div>
         </div>`;
     });
+    
     container.innerHTML = html;
     container.querySelectorAll('[data-action="edit"]').forEach(btn => btn.addEventListener('click', (e) => editProduct(parseInt(e.currentTarget.dataset.id))));
     container.querySelectorAll('[data-action="delete"]').forEach(btn => btn.addEventListener('click', (e) => deleteProduct(parseInt(e.currentTarget.dataset.id))));
@@ -156,21 +173,27 @@ function openProductModal() {
     document.getElementById('productBadge').value = '';
     document.getElementById('productImageUpload').value = '';
     document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('productSoldOut').checked = false; // ✅ إعادة تعيين Sold Out
     renderCategorySelect();
     document.getElementById('productModal').classList.add('active');
 }
+
 function closeProductModal() { document.getElementById('productModal').classList.remove('active'); }
+
 function renderCategorySelect() {
     const select = document.getElementById('productCategory');
     const categories = storeData.categories.filter(c => c.id !== 'all');
     select.innerHTML = categories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
 }
 
+// ✅ تعديل المنتج مع دعم Sold Out
 function editProduct(id) {
     const p = storeData.products.find(x => x.id === id);
     if (!p) { showToast('المنتج غير موجود', 'error'); return; }
+    
     editingProductId = id;
     document.getElementById('modalTitle').textContent = '✏️ تعديل منتج';
+    
     document.getElementById('productName').value = p.name;
     document.getElementById('productPrice').value = p.price;
     document.getElementById('productOldPrice').value = p.oldPrice || '';
@@ -179,8 +202,11 @@ function editProduct(id) {
     document.getElementById('productBrand').value = p.brand || '';
     document.getElementById('productWeight').value = p.weight || '';
     document.getElementById('productServings').value = p.servings || '';
+    document.getElementById('productSoldOut').checked = p.soldOut === true; // ✅ تعيين Sold Out
+    
     renderCategorySelect();
     document.getElementById('productCategory').value = p.category;
+    
     if (p.image && p.image.startsWith('data:')) {
         document.getElementById('imagePreview').src = p.image;
         document.getElementById('imagePreview').style.display = 'block';
@@ -189,6 +215,7 @@ function editProduct(id) {
         document.getElementById('productImageUrl').value = p.image || '';
         document.getElementById('imagePreview').style.display = 'none';
     }
+    
     document.getElementById('productModal').classList.add('active');
 }
 
@@ -212,6 +239,7 @@ function handleImageUpload(event) {
     reader.readAsDataURL(file);
 }
 
+// ✅ حفظ المنتج مع دعم Sold Out
 function saveProduct() {
     const name = document.getElementById('productName').value.trim();
     const category = document.getElementById('productCategory').value;
@@ -224,6 +252,7 @@ function saveProduct() {
     const brand = document.getElementById('productBrand').value.trim();
     const weight = document.getElementById('productWeight').value.trim();
     const servings = parseInt(document.getElementById('productServings').value) || null;
+    const soldOut = document.getElementById('productSoldOut').checked; // ✅ قراءة Sold Out
     
     if (!name || !category || isNaN(price)) { showToast('يرجى ملء الحقول المطلوبة (*)', 'error'); return; }
     
@@ -235,18 +264,20 @@ function saveProduct() {
         const p = storeData.products.find(x => x.id === editingProductId);
         if (p) {
             if (p.name !== name && !image.startsWith('data:')) { p._needsImageRename = true; p._oldImageFileName = extractFileName(image); }
-            Object.assign(p, { name, category, price, oldPrice, description, badge, image, brand, weight, servings });
+            Object.assign(p, { name, category, price, oldPrice, description, badge, image, brand, weight, servings, soldOut });
         }
     } else {
         const newId = storeData.products.length > 0 ? Math.max(...storeData.products.map(p => p.id)) + 1 : 1;
-        storeData.products.push({ id: newId, name, category, price, oldPrice, description, badge, image, brand, weight, servings });
+        storeData.products.push({ id: newId, name, category, price, oldPrice, description, badge, image, brand, weight, servings, soldOut });
     }
+    
     saveToLocalStorage();
     filterAdminProducts();
     closeProductModal();
     showToast(editingProductId ? 'تم التحديث ✓' : 'تمت الإضافة ✓');
 }
 
+// Categories
 function renderCategoriesAdmin() {
     const list = document.getElementById('categoriesList');
     if (!list || !storeData || !storeData.categories) return;
@@ -308,6 +339,7 @@ function renderStoreInfo() {
     document.getElementById('storeEmail').value = info.email || '';
     document.getElementById('storeLocation').value = info.location || '';
 }
+
 function saveStoreInfo() {
     if (!storeData.storeInfo) storeData.storeInfo = {};
     const info = storeData.storeInfo;
@@ -330,6 +362,7 @@ function renderFooterInfo() {
     document.getElementById('footerLocation').value = info.location || '';
     document.getElementById('footerEmail').value = info.email || '';
 }
+
 function saveFooterInfo() {
     if (!storeData.storeInfo) storeData.storeInfo = {};
     const info = storeData.storeInfo;
@@ -349,6 +382,7 @@ function renderAboutInfo() {
     document.getElementById('aboutDescription').value = storeData.about.description || '';
     document.getElementById('aboutFeatures').value = storeData.about.features || '';
 }
+
 function saveAboutInfo() {
     if (!storeData.about) storeData.about = {};
     storeData.about.title = document.getElementById('aboutTitle').value.trim();
@@ -362,12 +396,14 @@ function renderLogoPreview() {
     if (storeData && storeData.storeInfo && storeData.storeInfo.logo) preview.src = storeData.storeInfo.logo;
     else preview.src = 'logo.png';
 }
+
 function handleLogoUpload(event) {
     const file = event.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => { document.getElementById('logoPreview').src = e.target.result; document.getElementById('logoUrl').value = ''; };
     reader.readAsDataURL(file);
 }
+
 function saveLogo() {
     if (!storeData.storeInfo) storeData.storeInfo = {};
     const url = document.getElementById('logoUrl').value.trim();
@@ -476,6 +512,7 @@ function saveGitHubConfig() {
     if (!config.username || !config.repo || !config.token) return showToast('يرجى ملء جميع الحقول', 'error');
     localStorage.setItem(GITHUB_STORAGE_KEY, JSON.stringify(config)); showToast('تم حفظ الإعدادات ✓');
 }
+
 function loadGitHubConfig() {
     const saved = localStorage.getItem(GITHUB_STORAGE_KEY);
     if (saved) { try { const config = JSON.parse(saved); document.getElementById('githubUsername').value = config.username || ''; document.getElementById('githubRepo').value = config.repo || ''; document.getElementById('githubToken').value = config.token || ''; } catch (e) {} }
@@ -504,7 +541,6 @@ async function publishDirectly() {
     finally { publishBtn.disabled = false; publishBtn.textContent = originalText; }
 }
 
-// ✅ أداة تصحيح الروابط (محدثة لتجنب 422)
 async function fixAllImageUrls() {
     if (!storeData || !storeData.products) return showToast('لا توجد منتجات', 'error');
     const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
@@ -573,7 +609,6 @@ async function fixAllImageUrls() {
     showToast(`✅ تم: ${fixedCount} تصحيح، ${renamedCount} إعادة تسمية`);
 }
 
-// ✅ أداة تحويل الصور (محدثة لتجنب 422)
 async function convertAllImagesToWebP() {
     const category = document.getElementById('convertCategory').value;
     const deleteOld = document.getElementById('deleteOldImages').checked;
@@ -626,7 +661,7 @@ async function convertAllImagesToWebP() {
         progressBar.style.width = `${((i + 1) / base64Products.length) * 100}%`;
         countEl.textContent = `${i + 1} / ${base64Products.length}`;
         statusEl.textContent = `تحويل: ${product.name}`;
-        addLog(`🔄 [${i + 1}/${base64Products.length}] ${product.name}`, 'gold');
+        addLog(`🔄 [${i + 1}/${base64Products.length}] ${product.name} (ID: ${product.id})`, 'gold');
         try {
             const blob = await base64ToBlob(product.image);
             const originalSize = blob.size;
@@ -651,7 +686,7 @@ async function convertAllImagesToWebP() {
             let uploadBody = { message: `🖼️ رفع/تحديث ${product.name} (${fileName})`, content: webpBase64, branch: 'main' };
             
             if (existingFiles.has(fileName) && existingFiles.get(fileName).sha) {
-                uploadBody.sha = existingFiles.get(fileName).sha; // ✅ الحل لخطأ 422
+                uploadBody.sha = existingFiles.get(fileName).sha;
             }
             
             const uploadResponse = await fetch(`${baseUrl}/contents/${filePath}`, { method: 'PUT', headers, body: JSON.stringify(uploadBody) });
