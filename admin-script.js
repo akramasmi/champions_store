@@ -8,6 +8,31 @@ let editingProductId = null;
 
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCBmaWxsPSIjMWMxYzFlIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIvPjx0ZXh0IGZpbGw9IiNjOGEyNWQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgeD0iNTAlIiB5PSI1MCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
 
+// ✅ دالة تنظيف اسم الملف من الأحرف الخاصة
+function sanitizeFileName(name) {
+    return name
+        .toLowerCase()
+        .trim()
+        .replace(/[\u0600-\u06FF]/g, '') // حذف الأحرف العربية
+        .replace(/[^a-z0-9\s-]/g, '') // حذف الأحرف الخاصة
+        .replace(/\s+/g, '-') // المسافات إلى شرطات
+        .replace(/-+/g, '-') // شرطات متعددة إلى واحدة
+        .replace(/^-|-$/g, '') // حذف الشرطات من الأطراف
+        .substring(0, 50); // تحديد الطول الأقصى
+}
+
+// ✅ دالة توليد اسم الصورة من المنتج
+function generateImageFileName(product) {
+    const sanitizedName = sanitizeFileName(product.name);
+    return `${sanitizedName}-${product.id}.webp`;
+}
+
+// ✅ دالة استخراج اسم الملف من الرابط
+function extractFileName(imagePath) {
+    if (!imagePath) return null;
+    return imagePath.split('/').pop().split('?')[0];
+}
+
 function getImageUrl(imagePath) {
     if (!imagePath) return PLACEHOLDER_IMAGE;
     if (imagePath.startsWith('data:')) return imagePath;
@@ -15,16 +40,9 @@ function getImageUrl(imagePath) {
         const fileName = imagePath.split('/').pop().split('?')[0];
         return `images/${fileName}`;
     }
-    if (imagePath.startsWith('./images/') || imagePath.startsWith('/images/')) {
-        return imagePath.replace('./', '').replace(/^\//, '');
-    }
-    if (imagePath.startsWith('./imgs/') || imagePath.startsWith('/imgs/')) {
-        return imagePath.replace('./', '').replace(/^\//, '');
-    }
-    if (imagePath.startsWith('images/') || imagePath.startsWith('imgs/')) {
-        return imagePath;
-    }
-    return `images/${imagePath}`;
+    if (imagePath.startsWith('./')) return imagePath.substring(2);
+    if (imagePath.startsWith('/')) return imagePath.substring(1);
+    return imagePath;
 }
 
 function handleImageError(img) {
@@ -60,7 +78,6 @@ function logout() {
     document.getElementById('loginScreen').style.display = 'flex';
 }
 
-// Data
 async function loadData() {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -106,7 +123,6 @@ function renderAll() {
     populateAdminCategoryFilter();
 }
 
-// Tabs
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -116,11 +132,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
-// ✅ تعبئة فلتر الفئات في لوحة الإدارة
 function populateAdminCategoryFilter() {
     const select = document.getElementById('adminCategoryFilter');
     if (!select || !storeData || !storeData.categories) return;
-    
     select.innerHTML = '<option value="all">🏷️ جميع الفئات</option>';
     storeData.categories.forEach(cat => {
         if (cat.id !== 'all') {
@@ -129,7 +143,6 @@ function populateAdminCategoryFilter() {
     });
 }
 
-// ✅ الفلترة والفرز في لوحة الإدارة
 function filterAdminProducts() {
     const search = document.getElementById('adminProductSearch').value.toLowerCase();
     const categoryFilter = document.getElementById('adminCategoryFilter').value;
@@ -137,7 +150,6 @@ function filterAdminProducts() {
     
     let products = [...storeData.products];
     
-    // فلترة البحث
     if (search) {
         products = products.filter(p => 
             p.name.toLowerCase().includes(search) ||
@@ -146,40 +158,23 @@ function filterAdminProducts() {
         );
     }
     
-    // فلترة الفئة
     if (categoryFilter !== 'all') {
         products = products.filter(p => p.category === categoryFilter);
     }
     
-    // الفرز
     switch (sortBy) {
-        case 'name-asc':
-            products.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
-            break;
-        case 'name-desc':
-            products.sort((a, b) => b.name.localeCompare(a.name, 'ar'));
-            break;
-        case 'price-asc':
-            products.sort((a, b) => a.price - b.price);
-            break;
-        case 'price-desc':
-            products.sort((a, b) => b.price - a.price);
-            break;
-        case 'brand':
-            products.sort((a, b) => (a.brand || '').localeCompare(b.brand || '', 'ar'));
-            break;
-        case 'category':
-            products.sort((a, b) => (a.category || '').localeCompare(b.category || '', 'ar'));
-            break;
+        case 'name-asc': products.sort((a, b) => a.name.localeCompare(b.name, 'ar')); break;
+        case 'name-desc': products.sort((a, b) => b.name.localeCompare(a.name, 'ar')); break;
+        case 'price-asc': products.sort((a, b) => a.price - b.price); break;
+        case 'price-desc': products.sort((a, b) => b.price - a.price); break;
+        case 'brand': products.sort((a, b) => (a.brand || '').localeCompare(b.brand || '', 'ar')); break;
+        case 'category': products.sort((a, b) => (a.category || '').localeCompare(b.category || '', 'ar')); break;
     }
     
     renderProductsList(products);
 }
 
-// Products
-function renderProducts() {
-    renderProductsList(storeData.products);
-}
+function renderProducts() { renderProductsList(storeData.products); }
 
 function renderProductsList(products) {
     const container = document.getElementById('productsTable');
@@ -198,6 +193,7 @@ function renderProductsList(products) {
                 <strong>${p.name}</strong>
                 ${p.brand ? `<br><small style="color:var(--text-secondary);">🏢 ${p.brand}</small>` : ''}
                 ${p.badge ? `<br><small style="color:var(--gold-dark);">${p.badge}</small>` : ''}
+                <br><small style="color:var(--text-tertiary);font-size:0.7rem;">📁 ${extractFileName(p.image) || 'لا توجد صورة'}</small>
             </div>
             <div>${p.price} $</div>
             <div>${cat ? cat.name : p.category}</div>
@@ -211,24 +207,17 @@ function renderProductsList(products) {
     container.innerHTML = html;
     
     container.querySelectorAll('[data-action="edit"]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const id = parseInt(e.currentTarget.dataset.id);
-            editProduct(id);
-        });
+        btn.addEventListener('click', (e) => editProduct(parseInt(e.currentTarget.dataset.id)));
     });
     
     container.querySelectorAll('[data-action="delete"]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const id = parseInt(e.currentTarget.dataset.id);
-            deleteProduct(id);
-        });
+        btn.addEventListener('click', (e) => deleteProduct(parseInt(e.currentTarget.dataset.id)));
     });
 }
 
 function openProductModal() {
     editingProductId = null;
     document.getElementById('modalTitle').textContent = '➕ إضافة منتج';
-    
     document.getElementById('productId').value = '';
     document.getElementById('productName').value = '';
     document.getElementById('productPrice').value = '';
@@ -241,7 +230,6 @@ function openProductModal() {
     document.getElementById('productBrand').value = '';
     document.getElementById('productWeight').value = '';
     document.getElementById('productServings').value = '';
-    
     renderCategorySelect();
     document.getElementById('productModal').classList.add('active');
 }
@@ -334,6 +322,9 @@ function saveProduct() {
     if (editingProductId) {
         const p = storeData.products.find(x => x.id === editingProductId);
         if (p) {
+            const oldName = p.name;
+            const oldId = p.id;
+            
             p.name = name;
             p.category = category;
             p.price = price;
@@ -344,6 +335,12 @@ function saveProduct() {
             p.brand = brand;
             p.weight = weight;
             p.servings = servings;
+            
+            // ✅ إذا تغير الاسم أو الصورة، حدّث اسم الملف
+            if (oldName !== name && !image.startsWith('data:')) {
+                p._needsImageRename = true;
+                p._oldImageFileName = extractFileName(image);
+            }
         }
     } else {
         const newId = storeData.products.length > 0 ? Math.max(...storeData.products.map(p => p.id)) + 1 : 1;
@@ -355,7 +352,7 @@ function saveProduct() {
     saveToLocalStorage();
     filterAdminProducts();
     closeProductModal();
-    showToast(editingProductId ? 'تم التحديث ✓' : 'تمت الإضافة ✓');
+    showToast(editingProductId ? 'تم التحديث ✓ (انشر لتطبيق تغييرات الصورة)' : 'تمت الإضافة ✓');
 }
 
 // Categories
@@ -459,7 +456,6 @@ function saveStoreInfo() {
     showToast('تم الحفظ ✓');
 }
 
-// ✅ Footer Info
 function renderFooterInfo() {
     if (!storeData || !storeData.storeInfo) return;
     const info = storeData.storeInfo;
@@ -483,7 +479,6 @@ function saveFooterInfo() {
     showToast('تم حفظ إعدادات الفوتر ✓');
 }
 
-// About
 function renderAboutInfo() {
     if (!storeData) return;
     if (!storeData.about) {
@@ -507,7 +502,6 @@ function saveAboutInfo() {
     showToast('تم الحفظ ✓');
 }
 
-// Logo
 function renderLogoPreview() {
     const preview = document.getElementById('logoPreview');
     if (storeData && storeData.storeInfo && storeData.storeInfo.logo) {
@@ -544,7 +538,6 @@ function saveLogo() {
     showToast('تم حفظ اللوغو ✓');
 }
 
-// Password
 function changePassword() {
     const current = document.getElementById('currentPassword').value;
     const newPass = document.getElementById('newPassword').value;
@@ -562,7 +555,6 @@ function changePassword() {
     showToast('تم تغيير كلمة المرور ✓');
 }
 
-// Export/Import
 function exportData() {
     if (!storeData) return showToast('لا توجد بيانات', 'error');
     const dataStr = JSON.stringify(storeData, null, 2);
@@ -599,18 +591,147 @@ function importData(event) {
     event.target.value = '';
 }
 
-// Reorganize IDs
-function reorganizeIds() {
+// ✅ إعادة تهيئة IDs + إعادة تسمية الصور تلقائياً
+async function reorganizeIds() {
     if (!storeData || !storeData.products) return showToast('لا توجد منتجات', 'error');
-    if (!confirm('⚠️ إعادة ترقيم المنتجات من 1؟')) return;
     
+    const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
+    if (!config || !config.token) {
+        showToast('أعد إعداد GitHub أولاً', 'error');
+        return;
+    }
+    
+    if (!confirm('⚠️ سيتم:\n1. إعادة ترقيم المنتجات من 1\n2. إعادة تسمية جميع الصور على GitHub\n\nهل أنت متأكد؟')) return;
+    
+    showToast('🔄 جاري إعادة التهيئة...');
+    
+    // حساب التغييرات المطلوبة
+    const changes = [];
+    storeData.products.forEach((product, index) => {
+        const newId = index + 1;
+        if (product.id !== newId) {
+            const oldFileName = extractFileName(product.image);
+            const oldBaseName = oldFileName ? oldFileName.replace(/\.(webp|png|jpg|jpeg)$/i, '') : null;
+            
+            // احسب الاسم الجديد بناءً على الاسم والـ ID الجديد
+            const newFileName = generateImageFileName({...product, id: newId});
+            
+            changes.push({
+                product,
+                oldId: product.id,
+                newId,
+                oldFileName,
+                newFileName,
+                needsRename: oldFileName && oldFileName !== newFileName && !product.image.startsWith('data:')
+            });
+        }
+    });
+    
+    // تحديث IDs في JSON
     storeData.products.forEach((product, index) => {
         product.id = index + 1;
     });
     
     saveToLocalStorage();
     filterAdminProducts();
-    showToast(`✅ تم ترتيب ${storeData.products.length} منتج`);
+    
+    // إعادة تسمية الصور على GitHub
+    if (changes.some(c => c.needsRename)) {
+        try {
+            await renameImagesOnGitHub(changes.filter(c => c.needsRename), config);
+            showToast(`✅ تم إعادة تهيئة ${changes.length} منتج وإعادة تسمية الصور`);
+        } catch (e) {
+            showToast(`⚠️ تم تحديث IDs لكن فشل تحديث بعض الصور: ${e.message}`, 'error');
+        }
+    } else {
+        showToast(`✅ تم إعادة تهيئة ${changes.length} منتج`);
+    }
+}
+
+// ✅ دالة إعادة تسمية الصور على GitHub
+async function renameImagesOnGitHub(changes, config) {
+    const baseUrl = `https://api.github.com/repos/${config.username}/${config.repo}`;
+    const headers = {
+        'Authorization': `token ${config.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+    };
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const change of changes) {
+        try {
+            // جرب مجلد images/ ثم imgs/
+            let oldFilePath = null;
+            let folder = 'images';
+            
+            for (const f of ['images', 'imgs']) {
+                try {
+                    const res = await fetch(`${baseUrl}/contents/${f}/${change.oldFileName}`, { headers });
+                    if (res.ok) {
+                        oldFilePath = `${f}/${change.oldFileName}`;
+                        folder = f;
+                        break;
+                    }
+                } catch (e) {}
+            }
+            
+            if (!oldFilePath) {
+                console.warn(`⚠️ لم يُعثر على الملف القديم: ${change.oldFileName}`);
+                failCount++;
+                continue;
+            }
+            
+            // جلب محتوى الملف القديم
+            const fileRes = await fetch(`${baseUrl}/contents/${oldFilePath}`, { headers });
+            if (!fileRes.ok) throw new Error('فشل جلب الملف');
+            const fileData = await fileRes.json();
+            
+            // رفع الملف بالاسم الجديد
+            const newFilePath = `${folder}/${change.newFileName}`;
+            const uploadRes = await fetch(`${baseUrl}/contents/${newFilePath}`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({
+                    message: `🔄 إعادة تسمية: ${change.oldFileName} → ${change.newFileName}`,
+                    content: fileData.content,
+                    branch: 'main'
+                })
+            });
+            
+            if (!uploadRes.ok) throw new Error('فشل رفع الملف الجديد');
+            
+            // حذف الملف القديم
+            const deleteRes = await fetch(`${baseUrl}/contents/${oldFilePath}`, {
+                method: 'DELETE',
+                headers,
+                body: JSON.stringify({
+                    message: `🗑️ حذف بعد إعادة التسمية: ${change.oldFileName}`,
+                    sha: fileData.sha,
+                    branch: 'main'
+                })
+            });
+            
+            if (!deleteRes.ok) {
+                console.warn(`⚠️ تم رفع الجديد لكن فشل حذف القديم: ${change.oldFileName}`);
+            }
+            
+            // تحديث الرابط في المنتج
+            change.product.image = `${folder}/${change.newFileName}`;
+            successCount++;
+            
+            // تأخير لتجنب rate limit
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+        } catch (error) {
+            console.error(`❌ خطأ في ${change.product.name}:`, error);
+            failCount++;
+        }
+    }
+    
+    saveToLocalStorage();
+    console.log(`✅ إعادة التسمية: ${successCount} نجح، ${failCount} فشل`);
 }
 
 // GitHub
@@ -690,19 +811,12 @@ async function publishDirectly() {
     }
 }
 
-// Fix Image URLs
-// ✅ إصلاح شامل للروابط - يفحص كل صورة فعلياً
+// ✅ إصلاح شامل للروابط - يستخدم التسمية الجديدة
 async function fixAllImageUrls() {
-    if (!storeData || !storeData.products) {
-        showToast('لا توجد منتجات', 'error');
-        return;
-    }
+    if (!storeData || !storeData.products) return showToast('لا توجد منتجات', 'error');
     
     const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
-    if (!config || !config.token) {
-        showToast('أعد إعداد GitHub أولاً', 'error');
-        return;
-    }
+    if (!config || !config.token) return showToast('أعد إعداد GitHub أولاً', 'error');
     
     showToast('🔍 جاري فحص وإصلاح جميع الصور...');
     
@@ -712,129 +826,100 @@ async function fixAllImageUrls() {
         'Accept': 'application/vnd.github.v3+json'
     };
     
-    // ✅ جلب قائمة الملفات الفعلية من GitHub
+    // جلب قائمة الملفات الفعلية
     let githubFiles = [];
     
     try {
-        // جرب مجلد images/ أولاً
-        const imagesRes = await fetch(`${baseUrl}/contents/images`, { headers });
-        if (imagesRes.ok) {
-            const imagesData = await imagesRes.json();
-            githubFiles = githubFiles.concat(imagesData.filter(f => f.type === 'file'));
+        for (const folder of ['images', 'imgs']) {
+            try {
+                const res = await fetch(`${baseUrl}/contents/${folder}`, { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    githubFiles = githubFiles.concat(
+                        data.filter(f => f.type === 'file').map(f => ({ ...f, folder }))
+                    );
+                }
+            } catch (e) {}
         }
-        
-        // جرب مجلد imgs/ أيضاً
-        const imgsRes = await fetch(`${baseUrl}/contents/imgs`, { headers });
-        if (imgsRes.ok) {
-            const imgsData = await imgsRes.json();
-            githubFiles = githubFiles.concat(imgsData.filter(f => f.type === 'file'));
-        }
-        
-        // مجلد الجذر
-        const rootRes = await fetch(`${baseUrl}/contents/`, { headers });
-        if (rootRes.ok) {
-            const rootData = await rootRes.json();
-            githubFiles = githubFiles.concat(
-                rootData.filter(f => f.type === 'file' && 
-                    (f.name.endsWith('.webp') || f.name.endsWith('.png') || f.name.endsWith('.jpg')))
-            );
-        }
-        
     } catch (e) {
         console.error('خطأ في جلب الملفات:', e);
     }
     
-    console.log(`📁 تم العثور على ${githubFiles.length} ملف صورة على GitHub`);
+    console.log(`📁 تم العثور على ${githubFiles.length} ملف صورة`);
     
-    // ✅ بناء خريطة للأسماء
-    const fileMap = new Map();
-    githubFiles.forEach(file => {
-        // المفتاح: اسم الملف بدون الامتداد
-        const baseName = file.name.replace(/\.(webp|png|jpg|jpeg)$/i, '');
-        fileMap.set(baseName, file.name);
-        fileMap.set(file.name, file.name);
-    });
-    
-    // ✅ إصلاح كل منتج
     let fixedCount = 0;
+    let renamedCount = 0;
     let failedCount = 0;
     const report = [];
     
     for (const product of storeData.products) {
-        if (!product.image) continue;
+        if (!product.image || product.image.startsWith('data:')) continue;
         
-        // تخطي Base64
-        if (product.image.startsWith('data:')) continue;
+        const currentFileName = extractFileName(product.image);
+        const expectedFileName = generateImageFileName(product);
         
-        // استخراج اسم الملف الحالي
-        let currentFileName = product.image.split('/').pop().split('?')[0];
-        let currentBaseName = currentFileName.replace(/\.(webp|png|jpg|jpeg)$/i, '');
-        
-        // ✅ البحث عن الملف الصحيح
-        let correctFileName = null;
-        
-        // جرب 1: نفس الاسم
-        if (fileMap.has(currentFileName)) {
-            correctFileName = fileMap.get(currentFileName);
-        }
-        // جرب 2: بدون امتداد
-        else if (fileMap.has(currentBaseName)) {
-            correctFileName = fileMap.get(currentBaseName);
-        }
-        // جرب 3: ID المنتج فقط
-        else if (fileMap.has(String(product.id))) {
-            correctFileName = fileMap.get(String(product.id));
-        }
-        // جرب 4: product-{id}
-        else if (fileMap.has(`product-${product.id}`)) {
-            correctFileName = fileMap.get(`product-${product.id}`);
-        }
-        // جرب 5: البحث عن ملف يبدأ بـ product-{id}-
-        else {
-            for (const [key, value] of fileMap.entries()) {
-                if (key.startsWith(`product-${product.id}-`) || key.startsWith(`${product.id}-`)) {
-                    correctFileName = value;
-                    break;
+        // ✅ إذا كان الاسم مطابقاً للتسمية الجديدة - تحقق فقط من المجلد
+        if (currentFileName === expectedFileName) {
+            const found = githubFiles.find(f => f.name === expectedFileName);
+            if (found) {
+                const correctPath = `${found.folder}/${expectedFileName}`;
+                if (product.image !== correctPath) {
+                    product.image = correctPath;
+                    fixedCount++;
+                    report.push(`✅ ${product.name}: تم تصحيح المجلد → ${correctPath}`);
                 }
+            } else {
+                failedCount++;
+                report.push(`❌ ${product.name}: الملف ${expectedFileName} غير موجود`);
             }
+            continue;
         }
         
-        if (correctFileName) {
-            // تحديد المجلد الصحيح
-            const file = githubFiles.find(f => f.name === correctFileName);
-            const folder = file && file.path ? file.path.split('/')[0] : 'images';
-            const newUrl = `${folder}/${correctFileName}`;
+        // ✅ الاسم قديم - ابحث عن الملف الصحيح
+        const currentBaseName = currentFileName.replace(/\.(webp|png|jpg|jpeg)$/i, '');
+        
+        // جرب 1: الملف بنفس الاسم القديم
+        let found = githubFiles.find(f => f.name === currentFileName);
+        
+        // جرب 2: البحث بالـ ID
+        if (!found) {
+            found = githubFiles.find(f => 
+                f.name === `${product.id}.webp` ||
+                f.name === `product-${product.id}.webp` ||
+                f.name.startsWith(`product-${product.id}-`) ||
+                f.name.startsWith(`${product.id}-`)
+            );
+        }
+        
+        if (found) {
+            // ✅ تم العثور على الملف - أعد تسميته للتوافق مع النظام الجديد
+            const oldPath = `${found.folder}/${found.name}`;
+            const newPath = `${found.folder}/${expectedFileName}`;
             
-            if (product.image !== newUrl) {
-                product.image = newUrl;
+            try {
+                await renameImageOnGitHub(found, expectedFileName, config);
+                product.image = newPath;
+                renamedCount++;
+                report.push(`🔄 ${product.name}: ${found.name} → ${expectedFileName}`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            } catch (e) {
+                // في حال فشل إعادة التسمية، استخدم المسار الحالي
+                product.image = oldPath;
                 fixedCount++;
-                report.push(`✅ ${product.name}: ${currentFileName} → ${newUrl}`);
+                report.push(`⚠️ ${product.name}: تم استخدام المسار الحالي ${oldPath}`);
             }
         } else {
             failedCount++;
-            report.push(`❌ ${product.name}: لم يُعثر على ${currentFileName}`);
-        }
-    }
-    
-    // ✅ إصلاح اللوغو
-    if (storeData.storeInfo && storeData.storeInfo.logo) {
-        const logo = storeData.storeInfo.logo;
-        if (!logo.startsWith('data:')) {
-            let logoName = logo.split('/').pop();
-            if (fileMap.has(logoName)) {
-                const file = githubFiles.find(f => f.name === logoName);
-                const folder = file && file.path ? file.path.split('/')[0] : 'images';
-                storeData.storeInfo.logo = `${folder}/${logoName}`;
-            }
+            report.push(`❌ ${product.name}: لم يُعثر على أي ملف (الاسم الحالي: ${currentFileName})`);
         }
     }
     
     saveToLocalStorage();
     renderProducts();
     
-    // عرض التقرير
     const reportText = `📊 تقرير الإصلاح:\n\n` +
-        `✅ تم إصلاح: ${fixedCount}\n` +
+        `✅ تم تصحيح: ${fixedCount}\n` +
+        `🔄 تم إعادة تسمية: ${renamedCount}\n` +
         `❌ فشل: ${failedCount}\n` +
         `📁 ملفات GitHub: ${githubFiles.length}\n\n` +
         `📝 التفاصيل:\n${report.slice(0, 30).join('\n')}${report.length > 30 ? '\n...' : ''}`;
@@ -843,10 +928,51 @@ async function fixAllImageUrls() {
     console.log('📋 التقرير الكامل:', report);
     
     alert(reportText + '\n\n💡 راجع Console (F12) للتقرير الكامل\n\n⚠️ اضغط "نشر فوري" لحفظ التغييرات');
-    showToast(`✅ تم إصلاح ${fixedCount} رابط`);
+    showToast(`✅ تم: ${fixedCount} تصحيح، ${renamedCount} إعادة تسمية`);
 }
 
-// Test Images
+// ✅ دالة مساعدة لإعادة تسمية صورة واحدة على GitHub
+async function renameImageOnGitHub(file, newFileName, config) {
+    const baseUrl = `https://api.github.com/repos/${config.username}/${config.repo}`;
+    const headers = {
+        'Authorization': `token ${config.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+    };
+    
+    const oldPath = `${file.folder}/${file.name}`;
+    const newPath = `${file.folder}/${newFileName}`;
+    
+    // جلب المحتوى
+    const fileRes = await fetch(`${baseUrl}/contents/${oldPath}`, { headers });
+    if (!fileRes.ok) throw new Error('فشل جلب الملف');
+    const fileData = await fileRes.json();
+    
+    // رفع بالاسم الجديد
+    const uploadRes = await fetch(`${baseUrl}/contents/${newPath}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+            message: `🔄 إعادة تسمية: ${file.name} → ${newFileName}`,
+            content: fileData.content,
+            branch: 'main'
+        })
+    });
+    
+    if (!uploadRes.ok) throw new Error('فشل رفع الملف الجديد');
+    
+    // حذف القديم
+    await fetch(`${baseUrl}/contents/${oldPath}`, {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({
+            message: `🗑️ حذف بعد إعادة التسمية: ${file.name}`,
+            sha: fileData.sha,
+            branch: 'main'
+        })
+    });
+}
+
 async function testAllImageUrls() {
     if (!storeData || !storeData.products) return showToast('لا توجد منتجات', 'error');
     showToast('🔍 جاري الفحص...');
@@ -870,8 +996,11 @@ async function testAllImageUrls() {
         if (product.image.startsWith('data:')) { results.base64++; continue; }
         
         const ok = await testImage(product.image);
-        if (ok) { results.ok++; }
-        else { results.failed++; failedList.push(`${product.name}: ${product.image}`); }
+        if (ok) results.ok++;
+        else {
+            results.failed++;
+            failedList.push(`${product.name}: ${product.image}`);
+        }
     }
     
     let report = `📊 فحص ${productsToTest.length} منتج:\n\n`;
@@ -887,7 +1016,7 @@ async function testAllImageUrls() {
     alert(report);
 }
 
-// Convert Images
+// ✅ تحويل الصور - يستخدم التسمية الجديدة
 function showConvertModal() {
     const config = JSON.parse(localStorage.getItem(GITHUB_STORAGE_KEY) || 'null');
     if (!config || !config.token) return showToast('أعد إعداد GitHub أولاً', 'error');
@@ -923,7 +1052,7 @@ async function convertAllImagesToWebP() {
     
     const base64Products = productsToConvert.filter(p => p.image && p.image.startsWith('data:image'));
     if (base64Products.length === 0) return showToast('لا توجد صور Base64', 'error');
-    if (!confirm(`تحويل ${base64Products.length} صورة؟`)) return;
+    if (!confirm(`تحويل ${base64Products.length} صورة؟\n\nسيتم تسميتها: {اسم-المنتج}-{id}.webp`)) return;
     
     closeConvertModal();
     
@@ -976,7 +1105,9 @@ async function convertAllImagesToWebP() {
                     fileType: 'image/webp'
                 });
                 
-                const fileName = `${product.id}.webp`;
+                // ✅ التسمية الجديدة: {اسم-المنتج}-{id}.webp
+                const fileName = generateImageFileName(product);
+                
                 const reader = new FileReader();
                 const webpBase64 = await new Promise((resolve, reject) => {
                     reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -988,7 +1119,7 @@ async function convertAllImagesToWebP() {
                     method: 'PUT',
                     headers,
                     body: JSON.stringify({
-                        message: `🖼️ رفع ${product.name}`,
+                        message: `🖼️ رفع ${product.name} (${fileName})`,
                         content: webpBase64,
                         branch: 'main'
                     })
@@ -996,7 +1127,9 @@ async function convertAllImagesToWebP() {
                 
                 if (!uploadResponse.ok) throw new Error('فشل الرفع');
                 
+                // ✅ حفظ الرابط بالصيغة الجديدة
                 product.image = `images/${fileName}`;
+                
                 totalSizeSaved += (originalSize - compressedFile.size);
                 convertedCount++;
                 
@@ -1012,7 +1145,7 @@ async function convertAllImagesToWebP() {
         if (deleteOld) {
             storeData.products.forEach(p => {
                 if (p.image && p.image.startsWith('data:image')) {
-                    p.image = 'images/placeholder.webp';
+                    p.image = PLACEHOLDER_IMAGE;
                 }
             });
         }
@@ -1024,7 +1157,8 @@ async function convertAllImagesToWebP() {
             <div class="progress-title">✅ تم!</div>
             <div class="progress-text">
                 تم تحويل ${convertedCount} صورة<br>
-                <strong style="color: var(--success);">توفير: ${(totalSizeSaved / 1024 / 1024).toFixed(2)} MB</strong>
+                <strong style="color: var(--success);">توفير: ${(totalSizeSaved / 1024 / 1024).toFixed(2)} MB</strong><br>
+                <small style="color: var(--text-secondary);">التسمية: {اسم-المنتج}-{id}.webp</small>
             </div>
             <button class="btn-save" onclick="this.parentElement.remove()" style="margin-top: 16px; width: 100%;">حسناً</button>
         `;
@@ -1046,7 +1180,6 @@ async function base64ToBlob(base64String) {
     return await response.blob();
 }
 
-// Toast
 function showToast(msg, type = 'success') {
     const t = document.getElementById('toast');
     if (!t) return;
@@ -1056,7 +1189,6 @@ function showToast(msg, type = 'success') {
     setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// Events
 document.addEventListener('click', (e) => {
     if (e.target.dataset && e.target.dataset.tab === 'github') {
         setTimeout(loadGitHubConfig, 100);
