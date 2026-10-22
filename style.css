@@ -273,7 +273,7 @@ h1, h2, h3, h4 { font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; co
     border-color: var(--gold);
 }
 
-/* ✅ وصف الفئة */
+/* Category Description */
 .category-description { margin-top: 24px; animation: slideDown 0.3s ease; }
 
 @keyframes slideDown {
@@ -291,13 +291,7 @@ h1, h2, h3, h4 { font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; co
     -webkit-backdrop-filter: blur(10px);
 }
 
-.category-desc-content h3 {
-    color: var(--gold);
-    font-size: 1.4rem;
-    margin-bottom: 12px;
-    font-weight: 700;
-}
-
+.category-desc-content h3 { color: var(--gold); font-size: 1.4rem; margin-bottom: 12px; font-weight: 700; }
 .category-desc-content p { color: var(--text); font-size: 1rem; line-height: 1.8; }
 
 .category-desc-close {
@@ -320,7 +314,7 @@ h1, h2, h3, h4 { font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; co
 
 .category-desc-close:hover { background: var(--gold); color: var(--primary); }
 
-/* ✅ شريط الفرز الجديد */
+/* Sort Bar */
 .sort-bar {
     margin-top: 24px;
     padding: 16px 20px;
@@ -335,19 +329,9 @@ h1, h2, h3, h4 { font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; co
     -webkit-backdrop-filter: blur(10px);
 }
 
-.sort-label {
-    color: var(--gold);
-    font-weight: 600;
-    font-size: 0.9rem;
-    white-space: nowrap;
-}
+.sort-label { color: var(--gold); font-weight: 600; font-size: 0.9rem; white-space: nowrap; }
 
-.sort-options {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    flex: 1;
-}
+.sort-options { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
 
 .sort-btn {
     padding: 6px 14px;
@@ -363,11 +347,7 @@ h1, h2, h3, h4 { font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; co
     white-space: nowrap;
 }
 
-.sort-btn:hover {
-    background: rgba(200, 162, 93, 0.15);
-    color: var(--gold);
-    border-color: rgba(200, 162, 93, 0.3);
-}
+.sort-btn:hover { background: rgba(200, 162, 93, 0.15); color: var(--gold); border-color: rgba(200, 162, 93, 0.3); }
 
 .sort-btn.active {
     background: var(--gradient-gold);
@@ -414,6 +394,69 @@ h1, h2, h3, h4 { font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; co
     transform: translateY(-8px);
     border-color: rgba(200, 162, 93, 0.4);
     box-shadow: 0 20px 40px rgba(200, 162, 93, 0.2);
+}
+
+/* ✅ SOLD OUT - تأثير بصري واضح */
+.product-card.sold-out {
+    opacity: 0.75;
+    filter: saturate(0.6);
+}
+
+.product-card.sold-out:hover {
+    transform: translateY(-4px);
+    opacity: 0.85;
+}
+
+.product-card.sold-out .product-image {
+    filter: grayscale(50%) brightness(0.85);
+}
+
+.product-card.sold-out .product-image-wrapper::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%);
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* شارة Sold Out المائلة */
+.sold-out-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-18deg);
+    background: linear-gradient(135deg, #ff453a 0%, #d32f2f 100%);
+    color: white;
+    padding: 10px 40px;
+    font-size: 1.1rem;
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    z-index: 15;
+    box-shadow: 0 8px 24px rgba(255, 69, 58, 0.6), inset 0 0 0 2px rgba(255,255,255,0.3);
+    border-radius: 4px;
+    pointer-events: none;
+    animation: soldOutPulse 2s ease-in-out infinite;
+}
+
+@keyframes soldOutPulse {
+    0%, 100% { box-shadow: 0 8px 24px rgba(255, 69, 58, 0.6), inset 0 0 0 2px rgba(255,255,255,0.3); }
+    50% { box-shadow: 0 8px 32px rgba(255, 69, 58, 0.9), inset 0 0 0 2px rgba(255,255,255,0.5); }
+}
+
+/* تعطيل زر الإضافة عند Sold Out */
+.product-card.sold-out .add-to-cart-btn {
+    background: var(--text-tertiary) !important;
+    color: var(--text-secondary) !important;
+    border-color: var(--text-tertiary) !important;
+    cursor: not-allowed !important;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.product-card.sold-out .add-to-cart-btn::after {
+    content: ' (نفذت)';
 }
 
 .product-badge {
@@ -644,7 +687,27 @@ h1, h2, h3, h4 { font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; co
 
 .contact-card:hover { transform: translateY(-6px); border-color: rgba(200, 162, 93, 0.4); box-shadow: var(--shadow-gold-lg); }
 
-.contact-icon { font-size: 2.5rem; margin-bottom: 16px; }
+/* ✅ أيقونات التواصل الرسمية */
+.contact-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: transform var(--transition-base);
+}
+
+.contact-card:hover .contact-icon { transform: scale(1.1); }
+
+.contact-icon svg { width: 40px; height: 40px; }
+
+.contact-icon.whatsapp { background: rgba(37, 211, 102, 0.15); }
+.contact-icon.instagram { background: rgba(225, 48, 108, 0.15); }
+.contact-icon.location { background: rgba(200, 162, 93, 0.15); }
+.contact-icon.email { background: rgba(10, 132, 255, 0.15); }
+
 .contact-card h3 { color: var(--gold); margin-bottom: 10px; font-size: 1.4rem; }
 .contact-card p { color: var(--text-secondary); font-size: 0.95rem; }
 
@@ -789,6 +852,21 @@ h1, h2, h3, h4 { font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; co
 
 .product-detail-info .price { font-size: 2rem; color: var(--gold); font-weight: 800; margin-bottom: 16px; }
 
+/* ✅ Sold Out في المودال */
+.product-detail-sold-out {
+    display: inline-block;
+    background: linear-gradient(135deg, #ff453a 0%, #d32f2f 100%);
+    color: white;
+    padding: 8px 20px;
+    border-radius: var(--radius-full);
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(255, 69, 58, 0.4);
+}
+
 .product-detail-meta {
     display: flex;
     flex-wrap: wrap;
@@ -803,6 +881,15 @@ h1, h2, h3, h4 { font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; co
 .product-detail-meta .meta-item { padding: 4px 12px; font-size: 0.85rem; }
 
 .product-detail-info .description { color: var(--text-secondary); margin-bottom: 20px; line-height: 1.8; }
+
+/* ✅ زر معطل في المودال */
+.btn-disabled {
+    background: var(--text-tertiary) !important;
+    color: var(--text-secondary) !important;
+    cursor: not-allowed !important;
+    pointer-events: none;
+    opacity: 0.7;
+}
 
 /* Floating WhatsApp */
 .floating-whatsapp {
@@ -889,6 +976,13 @@ h1, h2, h3, h4 { font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; co
     .add-to-cart-btn, .view-btn { padding: 8px 10px; font-size: 0.75rem; }
     
     .product-badge { top: 8px; right: 8px; padding: 4px 8px; font-size: 0.65rem; }
+    
+    /* ✅ Sold Out على الجوال */
+    .sold-out-badge {
+        font-size: 0.85rem;
+        padding: 8px 24px;
+        letter-spacing: 2px;
+    }
     
     .product-card {
         transition: none;
