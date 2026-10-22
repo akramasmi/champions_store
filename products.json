@@ -570,7 +570,11 @@
       "oldPrice": null,
       "description": "300g",
       "badge": null,
-      "image": "images/pure-creatine-47.webp"
+      "image": "images/pure-creatine-47.webp",
+      "brand": "",
+      "weight": "",
+      "servings": null,
+      "soldOut": true
     },
     {
       "id": 48,
