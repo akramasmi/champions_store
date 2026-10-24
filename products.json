@@ -194,7 +194,11 @@
       "oldPrice": null,
       "description": "",
       "badge": null,
-      "image": "images/-10.webp"
+      "image": "images/-10.webp",
+      "brand": "",
+      "weight": "",
+      "servings": null,
+      "soldOut": true
     },
     {
       "id": 11,
@@ -287,7 +291,11 @@
       "oldPrice": null,
       "description": "محفز لهرمون النمو",
       "badge": null,
-      "image": "images/gh-max-19.webp"
+      "image": "images/gh-max-19.webp",
+      "brand": "",
+      "weight": "",
+      "servings": null,
+      "soldOut": true
     },
     {
       "id": 20,
